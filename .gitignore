@@ -1,0 +1,12 @@
+# Berkas sistem dan editor
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
+
+# Dependensi (hanya dipakai bila menambah tooling opsional)
+node_modules/
+
+# Berkas sementara pengujian
+*.log

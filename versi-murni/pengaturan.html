@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#312E81">
+  <title>Pengaturan | Brahamart</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/products.css">
+  <link rel="stylesheet" href="assets/css/settings.css">
+</head>
+<body class="products-page settings-page">
+  <div class="products-app">
+    <aside class="products-sidebar" id="products-sidebar">
+      <a class="products-brand" href="dashboard.html" aria-label="Brahamart, kembali ke dashboard">
+        <span class="products-brand__icon" aria-hidden="true"><img src="assets/img/Brahamart_keranjang-removebg-preview.png" alt=""></span>
+        <span>Brahamart</span>
+      </a>
+      <nav class="products-nav" aria-label="Navigasi utama">
+        <a class="products-nav__link" href="dashboard.html"><span>Dashboard</span></a>
+        <a class="products-nav__link" href="kasir.html"><span>Kasir</span></a>
+        <a class="products-nav__link" href="produk.html"><span>Produk</span></a>
+        <a class="products-nav__link" href="stok.html"><span>Stok</span></a>
+        <a class="products-nav__link" href="riwayat.html"><span>Riwayat</span></a>
+        <a class="products-nav__link" href="laporan.html"><span>Laporan</span></a>
+        <a class="products-nav__link" href="pengguna.html"><span>Pengguna</span></a>
+        <a class="products-nav__link is-active" href="pengaturan.html" aria-current="page"><span>Pengaturan</span></a>
+      </nav>
+      <div class="products-sidebar__hint">
+        <strong>Pengaturan Toko</strong>
+        <span>Konfigurasi identitas struk, pembayaran, dan cadangan data.</span>
+      </div>
+      <div class="products-profile">
+        <span class="avatar avatar--sidebar" id="sidebar-avatar" aria-hidden="true">AD</span>
+        <span class="products-profile__info"><strong id="sidebar-name">Admin</strong><span>Administrator</span></span>
+        <button class="products-profile__logout" type="button" id="logout-btn" aria-label="Keluar">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5m5 5H3m9-9h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7"/></svg>
+        </button>
+      </div>
+    </aside>
+    <div class="products-backdrop" id="products-backdrop" hidden></div>
+    <div class="products-main">
+      <header class="products-topbar">
+        <button class="products-menu-toggle" id="menu-toggle" type="button" aria-label="Buka navigasi" aria-expanded="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <strong>Sistem Kasir Minimarket</strong>
+        <span class="products-topbar__date" id="current-date"></span>
+        <div class="products-topbar__user">
+          <span><strong id="header-name">Admin</strong><small>Admin</small></span>
+          <span class="avatar" id="user-avatar" aria-hidden="true">AD</span>
+        </div>
+      </header>
+      <main class="products-content settings-content" id="settings-main">
+        <section class="product-page-heading">
+          <div><h1>Pengaturan Toko</h1><p>Atur informasi toko, kebijakan transaksi, dan cadangan data.</p></div>
+        </section>
+        <div class="settings-toast" id="settings-toast" role="status" aria-live="polite" hidden></div>
+        <form id="settings-form" novalidate>
+          <section class="product-card settings-card">
+            <h2>Identitas Toko &amp; Struk</h2>
+            <div class="settings-grid">
+              <label class="product-field">Nama toko *<input name="storeName" maxlength="80" required></label>
+              <label class="product-field">Nomor telepon<input name="storePhone" maxlength="40" type="tel"></label>
+              <label class="product-field settings-field--wide">Alamat toko<textarea name="storeAddress" maxlength="160" rows="2"></textarea></label>
+              <label class="product-field settings-field--wide">Footer struk<textarea name="receiptFooter" maxlength="160" rows="2"></textarea></label>
+              <label class="product-field">Ukuran kertas struk<select name="receiptPaperSize"><option value="58">58 mm</option><option value="80">80 mm</option></select></label>
+            </div>
+          </section>
+          <section class="product-card settings-card">
+            <h2>Kebijakan Transaksi &amp; Stok</h2>
+            <div class="settings-grid">
+              <label class="product-field">Tarif PPN (%)<input name="vatRate" type="number" min="0" max="100" step="0.1" required><span>PPN dianggap sudah termasuk dalam harga jual dan tidak menambah total.</span></label>
+              <label class="product-field">Stok minimum default<input name="defaultMinStock" type="number" min="0" step="1" required><span>Digunakan sebagai nilai awal saat menambahkan produk baru.</span></label>
+              <label class="settings-check settings-field--wide"><input name="roundTo100" type="checkbox"><span><strong>Bulatkan total ke Rp100 terdekat</strong><small>Pembulatan diterapkan setelah diskon dan dicatat pada transaksi.</small></span></label>
+              <fieldset class="settings-methods settings-field--wide">
+                <legend>Metode pembayaran aktif</legend>
+                <label><input type="checkbox" name="paymentMethods" value="Tunai"><span>Tunai</span></label>
+                <label><input type="checkbox" name="paymentMethods" value="QRIS"><span>QRIS</span></label>
+                <label><input type="checkbox" name="paymentMethods" value="Debit/Transfer"><span>Debit / Transfer</span></label>
+                <small>Pilih minimal satu metode pembayaran yang dapat dipakai kasir.</small>
+              </fieldset>
+            </div>
+          </section>
+          <div class="settings-actions">
+            <button class="btn btn--secondary" type="button" id="restore-defaults-btn">Pulihkan Default</button>
+            <button class="btn btn--primary" type="submit">Simpan Pengaturan</button>
+          </div>
+          <p class="settings-error" id="settings-error" role="alert" hidden></p>
+        </form>
+        <section class="product-card settings-card settings-backup">
+          <div><h2>Cadangan Data</h2><p>Unduh data produk, kategori, transaksi, mutasi stok, pengguna tanpa hash kata sandi, dan pengaturan toko.</p></div>
+          <div class="settings-actions">
+            <button class="btn btn--secondary" type="button" id="backup-csv-btn">Ekspor CSV</button>
+            <button class="btn btn--primary" type="button" id="backup-json-btn">Ekspor JSON</button>
+          </div>
+          <p class="settings-note">Data aplikasi disimpan di browser ini. Ekspor secara berkala dan simpan berkas cadangan di lokasi yang aman.</p>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script src="assets/js/storage.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/settings-store.js"></script>
+  <script src="assets/js/settings.js"></script>
+</body>
+</html>
