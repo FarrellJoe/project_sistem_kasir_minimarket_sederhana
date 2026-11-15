@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Ban, Printer, Search } from 'lucide-react';
-import { listTransactions, voidTransaction } from '../lib/api';
+import { listTransactions, listUsers, voidTransaction } from '../lib/api';
 import { dateTime, dayKey, money } from '../lib/format';
 import { useSessionStore } from '../stores';
 import { Badge, Button, Card, CardHeader, Dialog, EmptyState, Field, Input, Select, Textarea, Toast } from '../components/ui';
@@ -19,9 +19,12 @@ export default function Riwayat() {
   const queryClient = useQueryClient();
 
   const transactionsQuery = useQuery({ queryKey: ['transactions'], queryFn: listTransactions });
+  const usersQuery = useQuery({ queryKey: ['users'], queryFn: listUsers });
   const [search, setSearch] = useState('');
   const [date, setDate] = useState('');
   const [status, setStatus] = useState('');
+  const [cashier, setCashier] = useState('');
+  const [method, setMethod] = useState('');
   const [detail, setDetail] = useState(null);
   const [voidTarget, setVoidTarget] = useState(null);
   const [toast, setToast] = useState(null);
@@ -42,9 +45,11 @@ export default function Riwayat() {
         !String(transaction.cashierName || '').toLowerCase().includes(query)) return false;
       if (date && dayKey(transaction.createdAt) !== date) return false;
       if (status && transaction.status !== status) return false;
+      if (cashier && String(transaction.cashierId) !== String(cashier)) return false;
+      if (method && transaction.paymentMethod !== method) return false;
       return true;
     });
-  }, [transactionsQuery.data, search, date, status, isAdmin, session.userId]);
+  }, [transactionsQuery.data, search, date, status, cashier, method, isAdmin, session.userId]);
 
   const voidMutation = useMutation({
     mutationFn: (values) => voidTransaction({ id: voidTarget.id, reason: values.reason }, session),
@@ -78,7 +83,25 @@ export default function Riwayat() {
             <option value="dibatalkan">Dibatalkan</option>
           </Select>
         </Field>
-        <Button variant="secondary" onClick={() => { setSearch(''); setDate(''); setStatus(''); }}>Reset</Button>
+        {isAdmin ? (
+          <Field label="Kasir" className="min-w-[170px]">
+            <Select value={cashier} onChange={(event) => setCashier(event.target.value)}>
+              <option value="">Semua kasir</option>
+              {(usersQuery.data || []).map((user) => (
+                <option key={user.id} value={user.id}>{user.nama}</option>
+              ))}
+            </Select>
+          </Field>
+        ) : null}
+        <Field label="Metode" className="min-w-[160px]">
+          <Select value={method} onChange={(event) => setMethod(event.target.value)}>
+            <option value="">Semua metode</option>
+            <option value="Tunai">Tunai</option>
+            <option value="QRIS">QRIS</option>
+            <option value="Debit/Transfer">Debit / Transfer</option>
+          </Select>
+        </Field>
+        <Button variant="secondary" onClick={() => { setSearch(''); setDate(''); setStatus(''); setCashier(''); setMethod(''); }}>Reset</Button>
       </Card>
 
       <Card>

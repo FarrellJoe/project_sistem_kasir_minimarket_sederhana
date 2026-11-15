@@ -640,4 +640,6 @@ Repositori memuat dua implementasi dari kebutuhan yang sama, sehingga pembaca da
 | `versi-murni/` | HTML, CSS, dan JavaScript murni tanpa build tool | Seluruh kebutuhan berprioritas Tinggi dan Sedang; data di `localStorage`; menjadi acuan Bab 8.2–8.5 |
 | `versi-lanjutan/` | React 18 + Vite, Tailwind CSS dengan komponen bergaya shadcn/ui, React Router, Zustand, TanStack Query, React Hook Form + Zod, Lucide Icons | Cakupan fitur sama dengan `versi-murni/`, dibangun dengan pemisahan komponen, state, dan lapisan layanan data sesuai tabel teknologi Bab 2.7 |
 
+Status pemenuhan setiap kebutuhan fungsional dan non-fungsional pada kedua varian dicatat pada `docs/CONFORMANCE.md`. Dokumen tersebut juga memuat butir tampilan yang belum seragam (logo, header kasir, pagination) beserta rencana penutupannya, sehingga selisih antarvariansi tidak perlu ditebak dari kode.
+
 Keduanya memakai kunci penyimpanan yang sama (`kasir_products`, `kasir_transactions`, dan seterusnya) sehingga data satu varian dapat dibaca varian lain pada peramban yang sama. Batasan pada 8.3 berlaku untuk keduanya; perbedaan antarvariansi terletak pada cara kode disusun, bukan pada perilaku bisnis atau tingkat keamanan. Perpindahan ke Supabase direncanakan dengan mengganti isi lapisan layanan (`versi-lanjutan/src/lib/api.js`) tanpa mengubah komponen antarmuka.

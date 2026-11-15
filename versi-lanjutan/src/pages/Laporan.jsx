@@ -103,7 +103,7 @@ export default function Laporan() {
       ) : null}
 
       {report ? (
-        <>
+        <div className="print-area grid gap-4">
           <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
             {[
               { label: 'Total penjualan', value: money(report.revenue) },
@@ -205,7 +205,7 @@ export default function Laporan() {
               </table>
             </div>
           </Card>
-        </>
+        </div>
       ) : null}
     </div>
   );

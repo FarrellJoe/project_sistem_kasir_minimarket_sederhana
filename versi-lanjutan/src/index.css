@@ -66,5 +66,19 @@
     width: 100%;
     box-shadow: none !important;
     border: 0 !important;
+    background: #fff;
+  }
+  /* Struk mengikuti ukuran kertas pada Pengaturan (58 / 80 mm). */
+  .receipt-paper {
+    width: 80mm;
+  }
+  .receipt-paper[data-size='58'] {
+    width: 58mm;
+  }
+  .print-area table {
+    page-break-inside: auto;
+  }
+  .print-area tr {
+    page-break-inside: avoid;
   }
 }

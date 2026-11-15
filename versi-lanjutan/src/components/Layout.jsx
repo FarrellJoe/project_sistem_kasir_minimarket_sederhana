@@ -40,7 +40,9 @@ export default function Layout({ title, subtitle, actions, children }) {
         )}
       >
         <div className="flex items-center gap-2 px-5 py-5">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-white/10 text-lg" aria-hidden="true">🛒</span>
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white" aria-hidden="true">
+            <img src={`${import.meta.env.BASE_URL}brand/brahamart-mark.png`} alt="" className="h-9 w-9 object-contain" />
+          </span>
           <span className="font-heading text-lg font-semibold">Brahamart</span>
           <button type="button" className="ml-auto rounded p-1 lg:hidden" onClick={() => setMenuOpen(false)} aria-label="Tutup navigasi">
             <X size={18} />

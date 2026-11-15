@@ -56,6 +56,7 @@ Kredensial ini hanya untuk demo dan tidak ditampilkan pada halaman login. Ganti 
 
 - `docs/SRS Website Sistem Kasir Minimarket Sederhana.md` — SRS v1.4. Bab 8 memuat catatan implementasi: perbedaan rencana vs kode, pemetaan nama field Indonesia ↔ Inggris, batasan keamanan, dan keterangan dua varian.
 - `docs/AUDIT.md` — audit kode: kekuatan, temuan yang diperbaiki, temuan terbuka, dan matriks pengujian.
+- `docs/CONFORMANCE.md` — matriks kesesuaian FR-01…FR-19 dan NFR-01…NFR-10 per varian, plus daftar butir tampilan yang belum konsisten dan rencana penutupannya.
 - `docs/design.md` — design system (warna, tipografi, komponen).
 - `docs/mockup/` — gambar mockup per layar.
 

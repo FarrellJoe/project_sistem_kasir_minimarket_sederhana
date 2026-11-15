@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Eye, EyeOff, Loader2, ShoppingBasket } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { login } from '../lib/api';
 import { useSessionStore } from '../stores';
 import { Button, Input } from '../components/ui';
@@ -46,8 +46,8 @@ export default function Login() {
     <main className="grid min-h-screen lg:grid-cols-2">
       <section className="hidden flex-col justify-between bg-sidebar p-10 text-white lg:flex">
         <div className="flex items-center gap-3">
-          <span className="grid h-11 w-11 place-items-center rounded-xl bg-white/10" aria-hidden="true">
-            <ShoppingBasket size={22} />
+          <span className="grid h-12 w-12 place-items-center rounded-xl bg-white" aria-hidden="true">
+            <img src={`${import.meta.env.BASE_URL}brand/brahamart-mark.png`} alt="" className="h-10 w-10 object-contain" />
           </span>
           <div>
             <strong className="block font-heading text-xl">Brahamart</strong>

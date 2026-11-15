@@ -409,7 +409,10 @@ export default function Kasir() {
         }
       >
         {receipt ? (
-          <div className="print-area rounded-lg border border-dashed border-slate-300 p-4 text-sm">
+          <div
+            className="print-area receipt-paper rounded-lg border border-dashed border-slate-300 p-4 text-sm"
+            data-size={settings?.receiptPaperSize || '80'}
+          >
             <div className="text-center">
               <strong className="block font-heading text-base">{settings?.storeName || 'Brahamart'}</strong>
               <span className="text-ink-muted">{receipt.id}</span>
@@ -431,7 +434,8 @@ export default function Kasir() {
               <div className="flex justify-between"><dt>{receipt.paymentMethod}</dt><dd className="tnum">{money(receipt.received)}</dd></div>
               <div className="flex justify-between"><dt>Kembalian</dt><dd className="tnum">{money(receipt.change)}</dd></div>
             </dl>
-            <p className="mt-3 text-center text-ink-muted">{settings?.receiptFooter || 'Terima kasih telah berbelanja'}</p>
+            <p className="mt-2 text-center text-ink-muted">PPN {settings?.vatRate ?? 11}% sudah termasuk dalam harga</p>
+            <p className="mt-1 text-center text-ink-muted">{settings?.receiptFooter || 'Terima kasih telah berbelanja'}</p>
           </div>
         ) : null}
       </Dialog>
