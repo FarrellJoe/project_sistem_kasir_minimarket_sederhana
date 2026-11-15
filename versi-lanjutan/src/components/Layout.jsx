@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import {
   BarChart3, History, LayoutDashboard, LogOut, Menu, Package, Settings, ShoppingCart, Users, Warehouse, X,
 } from 'lucide-react';
@@ -7,6 +7,17 @@ import { useSessionStore } from '../stores';
 import { initials } from '../lib/format';
 import { logout } from '../lib/api';
 import { Badge, Button, cn } from './ui';
+
+const HINTS = {
+  '/dashboard': { title: 'Ringkasan Toko', text: 'Pantau penjualan, stok menipis, dan produk terlaris.' },
+  '/kasir': { title: 'Akses kasir', text: 'Fokus pada penjualan dan transaksi harian.' },
+  '/produk': { title: 'Manajemen Produk', text: 'Kelola katalog, kategori, harga, dan ketersediaan barang.' },
+  '/stok': { title: 'Manajemen Stok', text: 'Monitoring ketersediaan dan penyesuaian stok manual.' },
+  '/riwayat': { title: 'Riwayat Transaksi', text: 'Telusuri transaksi tersimpan dan pembatalannya.' },
+  '/laporan': { title: 'Laporan Penjualan', text: 'Analisis performa penjualan per periode.' },
+  '/pengguna': { title: 'Manajemen Pengguna', text: 'Atur akun, peran, dan akses ke sistem toko.' },
+  '/pengaturan': { title: 'Pengaturan Toko', text: 'Identitas toko dan opsi sistem.' },
+};
 
 const NAV = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin'] },
@@ -23,8 +34,13 @@ export default function Layout({ title, subtitle, actions, children }) {
   const session = useSessionStore((state) => state.session);
   const clearSession = useSessionStore((state) => state.clearSession);
   const [menuOpen, setMenuOpen] = useState(false);
+  const location = useLocation();
 
   const nav = NAV.filter((item) => item.roles.includes(session?.role));
+  const hint = HINTS[location.pathname] || { title: 'Brahamart', text: 'Sistem kasir minimarket.' };
+  const today = new Intl.DateTimeFormat('id-ID', {
+    day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  }).format(new Date());
 
   const handleLogout = async () => {
     await logout(session);
@@ -72,7 +88,12 @@ export default function Layout({ title, subtitle, actions, children }) {
           ))}
         </nav>
 
-        <div className="m-3 rounded-lg bg-white/5 p-3">
+        <div className="mx-3 mb-2 rounded-lg bg-white/5 p-3">
+          <strong className="block text-sm font-semibold">{hint.title}</strong>
+          <span className="mt-1 block text-sm leading-snug text-indigo-200/80">{hint.text}</span>
+        </div>
+
+        <div className="m-3 mt-0 rounded-lg bg-white/5 p-3">
           <div className="flex items-center gap-2">
             <span className="grid h-9 w-9 place-items-center rounded-full bg-white/15 text-sm font-semibold">
               {initials(session?.nama)}
@@ -102,6 +123,16 @@ export default function Layout({ title, subtitle, actions, children }) {
             {subtitle ? <p className="truncate text-sm text-ink-muted">{subtitle}</p> : null}
           </div>
           <div className="hidden items-center gap-3 md:flex">{actions}</div>
+          <span className="hidden text-sm text-ink-muted lg:block tnum">{today}</span>
+          <div className="hidden items-center gap-2 sm:flex">
+            <span className="text-right leading-tight">
+              <strong className="block text-sm text-ink">{session?.nama || 'Pengguna'}</strong>
+              <span className="block text-sm text-ink-muted">{session?.staffCode || ''}</span>
+            </span>
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-primary-tint text-sm font-semibold text-primary-hover">
+              {initials(session?.nama)}
+            </span>
+          </div>
           <Badge tone={session?.role === 'admin' ? 'info' : 'neutral'} className="capitalize">
             {session?.role || '-'}
           </Badge>

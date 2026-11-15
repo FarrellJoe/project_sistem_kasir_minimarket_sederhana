@@ -4,8 +4,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Barcode, Printer, Search, ShoppingCart, Trash2 } from 'lucide-react';
-import { commitSale, getSettings, listProducts } from '../lib/api';
-import { money } from '../lib/format';
+import { commitSale, getSettings, listProducts, listTransactions } from '../lib/api';
+import { dayKey, money, todayKey } from '../lib/format';
 import { useCartStore, useSessionStore } from '../stores';
 import { Button, Card, CardHeader, Dialog, EmptyState, Field, Input, Select, Toast, cn } from '../components/ui';
 
@@ -19,6 +19,7 @@ export default function Kasir() {
   const queryClient = useQueryClient();
   const productsQuery = useQuery({ queryKey: ['products'], queryFn: listProducts });
   const settingsQuery = useQuery({ queryKey: ['settings'], queryFn: getSettings });
+  const transactionsQuery = useQuery({ queryKey: ['transactions'], queryFn: listTransactions });
 
   const items = useCartStore((state) => state.items);
   const addItem = useCartStore((state) => state.addItem);
@@ -37,6 +38,7 @@ export default function Kasir() {
   const [discountOpen, setDiscountOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [receipt, setReceipt] = useState(null);
+  const [receiptSize, setReceiptSize] = useState(null);
   const searchRef = useRef(null);
 
   const settings = settingsQuery.data;
@@ -56,6 +58,20 @@ export default function Kasir() {
     return list.sort((a, b) => Number(b.stock > 0) - Number(a.stock > 0)).slice(0, 8);
   }, [products, query]);
 
+  const todayReceipts = (transactionsQuery.data || [])
+    .filter((transaction) => transaction.status !== 'dibatalkan' && dayKey(transaction.createdAt) === todayKey())
+    .length;
+
+  const quickProducts = useMemo(() => {
+    const available = products.filter((product) => Number(product.stock) > 0);
+    const preferred = ['plastic', 'tea', 'bread', 'lighter']
+      .map((id) => available.find((product) => product.id === id))
+      .filter(Boolean);
+    const rest = available.filter((product) => !preferred.includes(product));
+    return [...preferred, ...rest].slice(0, 4);
+  }, [products]);
+
+  const paperSize = receiptSize || settings?.receiptPaperSize || '80';
   const total = settings?.roundTo100 ? Math.round(totals.total / 100) * 100 : totals.total;
   const cashValue = Number(String(cash).replace(/\D/g, '')) || 0;
   const change = Math.max(0, cashValue - total);
@@ -171,8 +187,29 @@ export default function Kasir() {
     return () => document.removeEventListener('keydown', handler);
   }, [items.length, clearCart]);
 
+  const now = new Date();
+  const shift = now.getHours() < 12 ? 'Shift Pagi' : now.getHours() < 18 ? 'Shift Siang' : 'Shift Malam';
+
   return (
-    <div className="grid gap-4 xl:grid-cols-[1.6fr_1fr]">
+    <div className="grid gap-4">
+      <Card className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+        <div>
+          <h2 className="font-heading text-lg font-semibold text-ink">Terminal Kasir 01</h2>
+          <p className="mt-1 text-sm text-ink-muted">
+            {shift} · Kasir ID: <span className="font-medium text-ink">{session?.staffCode || '-'}</span>
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-muted">
+          <span className="inline-flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
+            Lokal · siap transaksi
+          </span>
+          <span>Struk hari ini: <strong className="text-ink tnum">{todayReceipts}</strong></span>
+          <span>Sesi tidak aktif: <strong className="text-ink">30 menit</strong></span>
+        </div>
+      </Card>
+
+      <div className="grid gap-4 xl:grid-cols-[1.6fr_1fr]">
       <div className="grid gap-4">
         <Card className="relative p-4">
           <form onSubmit={submitSearch} className="flex flex-col gap-2 sm:flex-row">
@@ -280,6 +317,26 @@ export default function Kasir() {
             </div>
           )}
         </Card>
+        <Card>
+          <CardHeader title="Produk cepat kasir" description="Klik untuk menambah instan" />
+          <div className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-4">
+            {quickProducts.length === 0 ? (
+              <p className="col-span-full text-sm text-ink-muted">Belum ada produk tersedia.</p>
+            ) : (
+              quickProducts.map((product) => (
+                <button
+                  key={product.id}
+                  type="button"
+                  onClick={() => add(product)}
+                  className="rounded-lg border border-slate-200 px-3 py-2 text-left transition-colors hover:border-primary hover:bg-primary-tint"
+                >
+                  <strong className="block truncate text-sm text-ink">{product.emoji} {product.name}</strong>
+                  <span className="text-sm font-semibold text-primary tnum">{money(product.salePrice)}</span>
+                </button>
+              ))
+            )}
+          </div>
+        </Card>
       </div>
 
       <Card className="flex flex-col">
@@ -348,6 +405,7 @@ export default function Kasir() {
           </Button>
         </div>
       </Card>
+      </div>
 
       <Dialog
         open={discountOpen}
@@ -408,10 +466,29 @@ export default function Kasir() {
           </>
         }
       >
+        <div className="no-print mb-3 flex items-center gap-2">
+          <span className="text-sm text-ink-muted">Ukuran kertas</span>
+          {['58', '80'].map((size) => (
+            <button
+              key={size}
+              type="button"
+              onClick={() => setReceiptSize(size)}
+              aria-pressed={paperSize === size}
+              className={
+                'rounded-lg border px-3 py-1.5 text-sm ' +
+                (paperSize === size
+                  ? 'border-primary bg-primary-tint text-primary-hover'
+                  : 'border-slate-200 text-ink-muted hover:border-primary/40')
+              }
+            >
+              {size} mm
+            </button>
+          ))}
+        </div>
         {receipt ? (
           <div
             className="print-area receipt-paper rounded-lg border border-dashed border-slate-300 p-4 text-sm"
-            data-size={settings?.receiptPaperSize || '80'}
+            data-size={paperSize}
           >
             <div className="text-center">
               <strong className="block font-heading text-base">{settings?.storeName || 'Brahamart'}</strong>
@@ -436,6 +513,8 @@ export default function Kasir() {
             </dl>
             <p className="mt-2 text-center text-ink-muted">PPN {settings?.vatRate ?? 11}% sudah termasuk dalam harga</p>
             <p className="mt-1 text-center text-ink-muted">{settings?.receiptFooter || 'Terima kasih telah berbelanja'}</p>
+            <div className="receipt-barcode" aria-hidden="true" />
+            <span className="block text-center text-sm text-ink-muted tnum">{receipt.id}</span>
           </div>
         ) : null}
       </Dialog>

@@ -39,6 +39,21 @@
   }
 }
 
+@layer components {
+  /* Barcode dekoratif pada struk (bukan barcode yang dapat dipindai). */
+  .receipt-barcode {
+    height: 34px;
+    margin: 10px auto 4px;
+    background-image: repeating-linear-gradient(
+      90deg,
+      #0f172a 0 2px,
+      #ffffff 2px 4px,
+      #0f172a 4px 5px,
+      #ffffff 5px 8px
+    );
+  }
+}
+
 @layer utilities {
   .tnum {
     font-variant-numeric: tabular-nums;
