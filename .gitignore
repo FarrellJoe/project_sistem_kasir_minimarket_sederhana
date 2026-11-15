@@ -5,8 +5,9 @@ desktop.ini
 .vscode/
 .idea/
 
-# Dependensi (hanya dipakai bila menambah tooling opsional)
+# Dependensi dan hasil build versi-lanjutan (dibangun ulang dengan npm install && npm run build)
 node_modules/
+dist/
 
 # Berkas sementara pengujian
 *.log

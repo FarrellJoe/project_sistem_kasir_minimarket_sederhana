@@ -46,7 +46,7 @@ Diurutkan berdasarkan dampak.
 
 | # | Temuan | Bukti | Dampak | Saran |
 | --- | --- | --- | --- | --- |
-| A | **Ukuran teks jauh di bawah standar desain sendiri.** 371 dari 461 deklarasi `font-size` bernilai 10–13 px (terbanyak 11 px dan 12 px) | `grep -c "font-size"` per berkas CSS; `design.md` §3 menetapkan "Body 14 px (never smaller)"; NFR-01 menetapkan minimal 14 px | NFR-01 tidak terpenuhi; teks kecil menyulitkan kasir di layar 1024 px | Naikkan skala: body 14 px, label 13 px, angka tabel 14 px; sesuaikan padding tabel dan lebar sidebar |
+| A | ~~Ukuran teks di bawah standar desain~~ **Sudah diperbaiki** | 371 deklarasi `font-size` 8–13 px pada 9 berkas CSS | NFR-01 dan `design.md` §3 mewajibkan minimal 14 px | Seluruh deklarasi dinaikkan ke 14 px, kontrol form diberi `font-size: 14px` eksplisit (sebelumnya jatuh ke default peramban 13,3 px), lalu diverifikasi: 0 elemen teks < 13,5 px dan 0 teks terpotong di halaman Kasir, Produk, Riwayat, Laporan, Pengguna, Dashboard |
 | B | Item dengan stok habis tetap bisa diklik (sengaja, agar muncul pesan), tetapi `role="option"` + `aria-disabled="true"` pada elemen yang masih menerima klik adalah kombinasi yang membingungkan pembaca layar | `cashier.js` `renderSearchResults()` | Aksesibilitas | Ganti menjadi `role="option"` tanpa `aria-disabled`, atau tampilkan sebagai grup terpisah "Stok habis" |
 | C | `commitSale()` menolak transaksi bila `salePrice` produk berubah sejak item masuk keranjang (`code: 'changed'`), sehingga kasir harus mengulang transaksi | `product-store.js:85-87` | Alur kasir terhenti tanpa penjelasan rinci | Tampilkan nama produk + harga lama/baru pada pesan, atau perbarui harga otomatis dengan notifikasi |
 | D | Pencarian kasir memuat seluruh produk aktif ke memori tanpa pagination | `cashier.js:9-23` | NFR-02 menargetkan 5.000 produk; pada jumlah itu render hasil pencarian akan lambat | Batasi 20 hasil teratas, atau pindahkan pencarian ke indeks |
@@ -70,6 +70,7 @@ Diurutkan berdasarkan dampak.
 | Pengaturan | muat nilai, simpan, persistensi | Lulus |
 | Otorisasi | Kasir membuka `laporan.html` dan `pengaturan.html` | Dialihkan ke `kasir.html` |
 | Galat JS | `window.onerror` + `unhandledrejection` di semua halaman | Tidak ada |
+| versi-lanjutan (React) | login, kasir (2 item, Rp 6.500, bayar Rp 20.000, kembalian Rp 13.500), transaksi tersimpan `TRX-20261115-0001`, stok Indomie 120→119, produk baru, penyesuaian stok 0→5, void (status `dibatalkan`, stok 119→120), ekspor CSV (`text/csv` 246 byte), tambah pengguna (`KSR-0882`), simpan pengaturan, kasir dialihkan dari `#/laporan` ke `#/kasir`, `npm run build` sukses | Lulus, nol error JS |
 
 ## 5. Kesimpulan
 

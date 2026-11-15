@@ -2,7 +2,7 @@
 
 ## Website Sistem Kasir Minimarket Sederhana
 
-Versi 1.3 | 15 November 2026 | Status: Draft untuk review
+Versi 1.4 | 15 November 2026 | Status: Draft untuk review
 
 | Informasi | Keterangan |
 | --- | --- |
@@ -23,6 +23,7 @@ Versi 1.3 | 15 November 2026 | Status: Draft untuk review
 | 1.1 | 9 Oktober 2026 | Penyesuaian lingkup ke sisi frontend dan pemilihan teknologi |
 | 1.2 | 9 Oktober 2026 | Penambahan use case diagram, class diagram, ERD, dan rencana pengerjaan |
 | 1.3 | 15 November 2026 | Penambahan Bab 8: catatan implementasi, pemetaan nama field, dan batasan keamanan versi 1 |
+| 1.4 | 15 November 2026 | Penyesuaian skala tipografi ke minimum 14 px dan penambahan keterangan dua varian repositori (Bab 8.6) |
 
 ## 1. PENDAHULUAN
 
@@ -629,3 +630,14 @@ Mitigasi yang sudah diterapkan pada versi 1: seluruh keluaran dinamis dilewatkan
 ### 8.5 Akun Contoh dan Data Awal
 
 Data awal dibuat otomatis saat halaman login pertama kali dibuka: dua akun (satu Admin, satu Kasir), enam kategori, dan sembilan produk contoh. Akun contoh hanya untuk pengujian dan wajib diganti sebelum pemakaian nyata. Perubahan data tersimpan di browser yang dipakai; menghapus data situs pada browser akan mengembalikan data ke kondisi awal.
+
+### 8.6 Dua Varian dalam Repositori
+
+Repositori memuat dua implementasi dari kebutuhan yang sama, sehingga pembaca dapat membandingkan pendekatan tanpa berpindah dokumen.
+
+| Varian | Teknologi | Isi |
+| --- | --- | --- |
+| `versi-murni/` | HTML, CSS, dan JavaScript murni tanpa build tool | Seluruh kebutuhan berprioritas Tinggi dan Sedang; data di `localStorage`; menjadi acuan Bab 8.2–8.5 |
+| `versi-lanjutan/` | React 18 + Vite, Tailwind CSS dengan komponen bergaya shadcn/ui, React Router, Zustand, TanStack Query, React Hook Form + Zod, Lucide Icons | Cakupan fitur sama dengan `versi-murni/`, dibangun dengan pemisahan komponen, state, dan lapisan layanan data sesuai tabel teknologi Bab 2.7 |
+
+Keduanya memakai kunci penyimpanan yang sama (`kasir_products`, `kasir_transactions`, dan seterusnya) sehingga data satu varian dapat dibaca varian lain pada peramban yang sama. Batasan pada 8.3 berlaku untuk keduanya; perbedaan antarvariansi terletak pada cara kode disusun, bukan pada perilaku bisnis atau tingkat keamanan. Perpindahan ke Supabase direncanakan dengan mengganti isi lapisan layanan (`versi-lanjutan/src/lib/api.js`) tanpa mengubah komponen antarmuka.
