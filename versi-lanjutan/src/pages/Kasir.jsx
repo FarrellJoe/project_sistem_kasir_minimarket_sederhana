@@ -49,6 +49,7 @@ export default function Kasir() {
   const [receipt, setReceipt] = useState(null);
   const [receiptSize, setReceiptSize] = useState(null);
   const searchRef = useRef(null);
+  const cashRef = useRef(null);
 
   const settings = settingsQuery.data;
   const targetItem = discountTargetId ? items.find((item) => item.productId === discountTargetId) : null;
@@ -245,24 +246,60 @@ export default function Kasir() {
   };
 
   useEffect(() => {
+    /* Pintasan mengikuti cashier.js versi-murni (SRS 8.4):
+       F1 cari · F4 diskon · F8 nominal bayar · F9 batal · F10 cetak · F2/Esc tutup · Enter bayar. */
     const handler = (event) => {
+      const tag = document.activeElement?.tagName;
+      if (receipt) {
+        if (event.key === 'F10') {
+          event.preventDefault();
+          window.print();
+        } else if (event.key === 'F2' || event.key === 'Escape') {
+          event.preventDefault();
+          setReceipt(null);
+        }
+        return;
+      }
+      if (paymentOpen) {
+        if (event.key === 'F8') {
+          event.preventDefault();
+          cashRef.current?.focus();
+        } else if (event.key === 'Enter') {
+          event.preventDefault();
+          finishPayment();
+        }
+        return;
+      }
+      if (discountOpen) {
+        if (event.key === 'F2' || event.key === 'Escape') {
+          event.preventDefault();
+          setDiscountOpen(false);
+        }
+        return;
+      }
       if (event.key === 'F1') {
         event.preventDefault();
         searchRef.current?.focus();
       } else if (event.key === 'F4') {
         event.preventDefault();
         openDiscount();
+      } else if (event.key === 'F8') {
+        event.preventDefault();
+        cashRef.current?.focus();
       } else if (event.key === 'F9') {
         event.preventDefault();
         if (items.length) {
           clearCart();
           notify('Transaksi dibatalkan.');
         }
+      } else if (event.key === 'Enter' && !['INPUT', 'BUTTON', 'SELECT', 'TEXTAREA'].includes(tag)) {
+        event.preventDefault();
+        if (items.length) setPaymentOpen(true);
       }
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [items.length, itemDiscounts, discount, clearCart, openDiscount]);
+  }, [items.length, itemDiscounts, discount, clearCart, openDiscount, receipt, paymentOpen, discountOpen]);
 
   const now = new Date();
   const shift = now.getHours() < 12 ? 'Shift Pagi' : now.getHours() < 18 ? 'Shift Siang' : 'Shift Malam';
@@ -283,6 +320,9 @@ export default function Kasir() {
           </span>
           <span>Struk hari ini: <strong className="text-ink tnum">{todayReceipts}</strong></span>
           <span>Sesi tidak aktif: <strong className="text-ink">30 menit</strong></span>
+          <span className="w-full text-sm text-ink-muted">
+            F1 cari · F4 diskon · F8 nominal · F9 batal · Enter bayar
+          </span>
         </div>
       </Card>
 
@@ -475,6 +515,7 @@ export default function Kasir() {
           {method === 'Tunai' ? (
             <Field label="Uang diterima">
               <Input
+                ref={cashRef}
                 inputMode="numeric"
                 value={cash}
                 onChange={(event) => setCash(event.target.value.replace(/\D/g, ''))}

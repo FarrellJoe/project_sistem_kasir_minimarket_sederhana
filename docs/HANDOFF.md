@@ -17,6 +17,8 @@ Dokumen ini untuk melanjutkan pekerjaan di sesi berikutnya tanpa membaca ulang s
 | Tahap 1 konsistensi tampilan (React) | Selesai, teruji |
 | Tahap 2 celah fungsional: FR-14, FR-19, NFR-02, NFR-03 | **Selesai, teruji di browser** |
 | Tahap 3 (uji regresi formal 19 FR + SRS 1.5) | Belum |
+| Audit ulang SRS 16 Nov: 5 selisih diperbaiki (filter kategori, laba, grafik tren, peringatan harga, guard nonaktifkan diri) | Selesai, teruji |
+| Mark logo Brahamart diperbesar (88 px di tile 36 px, 128 px di tile 48 px) | Selesai |
 
 ## 2. Yang selesai di Tahap 2
 
@@ -85,6 +87,6 @@ Uji browser otomatis dipakai lewat CDP dengan skrip di `%LOCALAPPDATA%\hermes\ca
 
 ## 8. Langkah pertama sesi berikutnya
 
-1. Buka `docs/CONFORMANCE.md` bagian 4 (Tahap 3) — mulai dari uji regresi formal 19 FR di kedua varian.
-2. Untuk setiap butir uji: jalankan `npm run build`, buka `dist/` di `python -m http.server 8125`, uji lewat CDP, catat bukti di `docs/AUDIT.md`.
-3. SRS naik ke 1.5 dengan catatan implementasi Tahap 2, lalu commit (`docs: SRS 1.5 + matriks uji`) dan push ke `main`.
+1. Buka `docs/CONFORMANCE.md` bagian 6 (catatan audit) dan bagian 4 (Tahap 3) — mulai dari SRS 1.5 yang mencatat temuan audit 16 Nov.
+2. Uji regresi formal 19 FR di kedua varian dan isi matriks bukti di `docs/AUDIT.md`.
+3. Commit (`docs: SRS 1.5 + matriks uji`) dan push ke `main`.
