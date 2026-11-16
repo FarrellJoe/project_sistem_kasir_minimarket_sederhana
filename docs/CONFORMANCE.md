@@ -1,7 +1,7 @@
 # Kesesuaian Kode terhadap SRS
 
-Diperbarui: 16 November 2026
-Acuan: `docs/SRS Website Sistem Kasir Minimarket Sederhana.md` versi 1.4
+Diperbarui: 17 November 2026
+Acuan: `docs/SRS Website Sistem Kasir Minimarket Sederhana.md` versi 1.5
 Varian yang dinilai: `versi-murni/` (HTML/CSS/JS) dan `versi-lanjutan/` (React 18 + Vite)
 
 Legenda: **Ya** = terpenuhi dan teruji · **Sebagian** = ada tetapi belum lengkap · **Belum** = belum ada.
@@ -27,7 +27,7 @@ Legenda: **Ya** = terpenuhi dan teruji · **Sebagian** = ada tetapi belum lengka
 | FR-15 | Metode pembayaran tunai/QRIS/debit | Ya | Ya | Diambil dari Pengaturan |
 | FR-16 | Cetak struk lewat browser | Ya | Ya | Tombol cetak, CSS cetak khusus struk (58/80 mm) |
 | FR-17 | Void transaksi + stok kembali | Ya | Ya | Admin saja; uji: status `dibatalkan`, stok 119→120 |
-| FR-18 | Ekspor laporan CSV/PDF | Ya | Ya | CSV berkas nyata; PDF lewat dialog cetak (bukan jsPDF seperti SRS) |
+| FR-18 | Ekspor laporan CSV/PDF | Ya | Ya | CSV lewat Blob (`text/csv`), PDF lewat jsPDF 4 (ringkasan + tabel produk). Uji: berkas PDF 5.559 byte, header `%PDF-1.3`, 1 halaman, memuat "Laporan Penjualan Brahamart", "Ringkasan", dan "Produk terjual" |
 | FR-19 | Ganti password dan perbarui profil sendiri | Ya | Ya | versi-murni: tab "Profil Saya" + ganti password. versi-lanjutan (Tahap 2): halaman `/profil` untuk Admin dan Kasir — nama, kontak, foto opsional (JPG/PNG ≤2 MB, diperkecil ke 256 px), ganti password dengan verifikasi password lama. Uji: password lama salah ditolak, password baru bisa dipakai login |
 
 Fitur yang SRS sebut **ditunda** (bukan celah): tahan transaksi, log aktivitas, rekap tutup kasir, cetak thermal langsung, scanner kamera, retur, supplier, multi-cabang.
@@ -107,7 +107,8 @@ Audit ulang terhadap SRS (bukan hanya membaca tabel di atas) menemukan lima seli
 | Laporan tanpa grafik tren penjualan (SRS Bab 4.7) | Output FR-08 tidak lengkap | Kartu "Tren penjualan" dengan bar harian, total periode, rata-rata harian | 1 bar untuk 1 hari transaksi, muncul tanpa error |
 | Tidak ada peringatan "harga jual di bawah harga beli" (SRS Bab 4.3) | Aturan bisnis FR-02 tidak tampil | Peringatan kuning di formulir produk, tetap boleh disimpan | Diuji dengan harga beli 5.000 / jual 3.000 |
 | Larangan menonaktifkan akun sendiri hanya di antarmuka | Bisa dilewati lewat pemanggilan layanan | Guard `session.userId` di `saveUser` dan `toggleUser` | Kode + tombol nonaktif untuk akun sendiri |
+| Tech stack Bab 2.7: grafik tidak memakai library, PDF tidak memakai jsPDF | Dua baris rencana teknologi tidak terpenuhi | Recharts 3 untuk Dashboard & Laporan (chunk terpisah), jsPDF 4 untuk ekspor PDF | Chart SVG ter-render (`svg.recharts-surface`), berkas PDF nyata `%PDF-1.3` 1 halaman |
 
-Selisih yang **masih** ada dan disengaja (bukan bug, sudah tercatat di SRS Bab 8.1/8.3): ekspor PDF memakai dialog cetak peramban, RBAC ditegakkan di sisi klien karena tanpa backend, foto produk hanya ada di versi-murni, serta uji kompatibilitas baru dilakukan di Chrome.
+Selisih yang **masih** ada dan disengaja: backend Supabase belum dipakai sehingga RBAC dan atomisitas hanya di sisi klien (SRS 8.3), foto produk hanya ada di versi-murni, tautan Figma belum dicantumkan, dan uji kompatibilitas baru dilakukan di Chrome. Status teknologi per baris ada di `docs/SRS …` Bab 8.7.
 
 Hasil uji tambahan: 5.009 produk → pencarian 29–37 ms, simpan transaksi 86 ms, `DOMContentLoaded` 34 ms; font minimum 14 px di seluruh halaman; 0 error JS; void menghapus transaksi dari laporan dan mengembalikan stok (199 → 200).

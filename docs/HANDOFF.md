@@ -19,6 +19,8 @@ Dokumen ini untuk melanjutkan pekerjaan di sesi berikutnya tanpa membaca ulang s
 | Tahap 3 (uji regresi formal 19 FR + SRS 1.5) | Belum |
 | Audit ulang SRS 16 Nov: 5 selisih diperbaiki (filter kategori, laba, grafik tren, peringatan harga, guard nonaktifkan diri) | Selesai, teruji |
 | Mark logo Brahamart diperbesar (88 px di tile 36 px, 128 px di tile 48 px) | Selesai |
+| Tech stack Bab 2.7: Recharts 3 (grafik) + jsPDF 4 (PDF laporan), halaman berat di-lazy | Selesai, teruji |
+| SRS naik ke 1.5 (Bab 8.7 status teknologi) + README/CONFORMANCE diperbarui | Selesai |
 
 ## 2. Yang selesai di Tahap 2
 

@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { AlertTriangle, Package, Receipt, ShoppingBag, TrendingUp } from 'lucide-react';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { getSettings, listProducts, listTransactions } from '../lib/api';
 import { dayKey, money, number, todayKey } from '../lib/format';
 import { Badge, Card, CardHeader, EmptyState } from '../components/ui';
@@ -37,9 +38,14 @@ export default function Dashboard() {
     const todayTx = txs.filter((tx) => dayKey(tx.createdAt) === today);
     const revenue = todayTx.reduce((sum, tx) => sum + Number(tx.total || 0), 0);
     const items = todayTx.reduce((sum, tx) => sum + Number(tx.itemCount || 0), 0);
+    const productById = new Map((products.data || []).map((product) => [String(product.id), product]));
     const profit = todayTx.reduce((sum, tx) =>
-      sum + (tx.items || []).reduce((inner, item) =>
-        inner + (Number(item.price) - Number(item.purchasePrice || 0)) * Number(item.quantity || 0), 0), 0);
+      sum + (tx.items || []).reduce((inner, item) => {
+        const product = productById.get(String(item.productId));
+        const cost = Number(item.purchasePrice ?? product?.purchasePrice ?? 0);
+        const net = Number(item.subtotal ?? Number(item.price || 0) * Number(item.quantity || 0));
+        return inner + (net - cost * Number(item.quantity || 0));
+      }, 0), 0);
 
     const days = Array.from({ length: 7 }, (_, index) => {
       const date = new Date();
@@ -72,7 +78,6 @@ export default function Dashboard() {
       profit,
       average: todayTx.length ? Math.round(revenue / todayTx.length) : 0,
       days,
-      maxDay: Math.max(1, ...days.map((day) => day.total)),
       top: Array.from(productSales.values()).sort((a, b) => b.quantity - a.quantity).slice(0, 5),
       lowStock,
     };
@@ -96,19 +101,21 @@ export default function Dashboard() {
             {loading ? (
               <p className="text-sm text-ink-muted">Memuat data…</p>
             ) : (
-              <div className="flex h-48 items-end gap-3">
-                {data.days.map((day) => (
-                  <div key={day.key} className="flex flex-1 flex-col items-center gap-2">
-                    <div className="flex w-full flex-1 items-end">
-                      <div
-                        className="w-full rounded-t-lg bg-primary/80 transition-all hover:bg-primary"
-                        style={{ height: `${Math.max(4, (day.total / data.maxDay) * 100)}%` }}
-                        title={money(day.total)}
-                      />
-                    </div>
-                    <span className="text-sm text-ink-muted">{day.label}</span>
-                  </div>
-                ))}
+              <div className="h-48" role="img" aria-label="Grafik tren penjualan 7 hari">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={data.days} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                    <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 14, fill: '#64748B' }} />
+                    <YAxis hide domain={[0, 'dataMax']} />
+                    <Tooltip
+                      formatter={(value) => money(value)}
+                      labelStyle={{ fontSize: 14, color: '#0F172A' }}
+                      contentStyle={{ fontSize: 14, borderRadius: 8, borderColor: '#E2E8F0' }}
+                      cursor={{ fill: '#EEF2FF' }}
+                    />
+                    <Bar dataKey="total" name="Omzet" fill="#4F46E5" radius={[6, 6, 0, 0]} maxBarSize={48} />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             )}
           </div>

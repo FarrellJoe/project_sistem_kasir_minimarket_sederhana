@@ -1,18 +1,20 @@
-import { useEffect } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { getSession, logout, touchSession } from './lib/api';
 import { useSessionStore } from './stores';
 import Layout from './components/Layout.jsx';
 import Login from './pages/Login.jsx';
-import Dashboard from './pages/Dashboard.jsx';
 import Kasir from './pages/Kasir.jsx';
 import Produk from './pages/Produk.jsx';
 import Stok from './pages/Stok.jsx';
 import Riwayat from './pages/Riwayat.jsx';
-import Laporan from './pages/Laporan.jsx';
 import Pengguna from './pages/Pengguna.jsx';
 import Pengaturan from './pages/Pengaturan.jsx';
 import Profil from './pages/Profil.jsx';
+
+/* Dua halaman ini memuat Recharts; dimuat terpisah agar bundle awal tetap ringkas. */
+const Dashboard = lazy(() => import('./pages/Dashboard.jsx'));
+const Laporan = lazy(() => import('./pages/Laporan.jsx'));
 
 function RequireAuth({ roles, children }) {
   const session = useSessionStore((state) => state.session);
@@ -94,7 +96,12 @@ export default function App() {
   }, [session?.userId, clearSession]);
 
   return (
-    <Routes>
+    <Suspense
+      fallback={
+        <div className="grid min-h-screen place-items-center bg-canvas text-sm text-ink-muted">Memuat halaman…</div>
+      }
+    >
+      <Routes>
       <Route path="/login" element={<Login />} />
       <Route
         path="/dashboard"
@@ -187,6 +194,7 @@ export default function App() {
         }
       />
       <Route path="*" element={<Navigate to="/kasir" replace />} />
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 }

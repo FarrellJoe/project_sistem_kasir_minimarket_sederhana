@@ -6,7 +6,7 @@ Proyek mata kuliah Web Based Programming (Sistem Informasi, SATU University). Re
 | --- | --- |
 | `versi-murni/` | HTML, CSS, dan JavaScript murni tanpa build tool. Data di `localStorage`. |
 | `versi-lanjutan/` | React 18 + Vite + Tailwind CSS (komponen bergaya shadcn/ui), React Router, Zustand, TanStack Query, React Hook Form + Zod, Lucide Icons. |
-| `docs/` | SRS (versi 1.4), design system, laporan audit, dan mockup Figma. |
+| `docs/` | SRS (versi 1.5), design system, laporan audit, dan mockup Figma. |
 
 ## Menjalankan
 
@@ -47,7 +47,7 @@ Kredensial ini hanya untuk demo dan tidak ditampilkan pada halaman login. Ganti 
 - Produk: CRUD barang dan kategori, pencarian, filter kategori/status stok, nonaktifkan (soft delete), pagination 10 baris.
 - Stok: daftar ketersediaan, penyesuaian dengan alasan wajib, kartu stok.
 - Riwayat: daftar transaksi (pagination), detail, cetak ulang, void oleh Admin dengan pengembalian stok.
-- Laporan: filter periode/kasir/kategori, ringkasan, produk terjual, ekspor CSV (dan cetak PDF).
+- Laporan: filter periode/kasir/kategori, ringkasan, produk terjual, grafik tren, ekspor CSV (Blob) dan PDF (jsPDF).
 - Pengguna: tambah/ubah/nonaktifkan akun, reset password, perlindungan Admin terakhir, kode staf otomatis.
 - Profil Saya: ubah nama/kontak/foto dan ganti password sendiri.
 - Pengaturan: identitas toko, PPN, pembulatan, metode pembayaran, cadangan JSON/CSV.
@@ -55,7 +55,7 @@ Kredensial ini hanya untuk demo dan tidak ditampilkan pada halaman login. Ganti 
 
 ## Dokumen
 
-- `docs/SRS Website Sistem Kasir Minimarket Sederhana.md` — SRS v1.4. Bab 8 memuat catatan implementasi: perbedaan rencana vs kode, pemetaan nama field Indonesia ↔ Inggris, batasan keamanan, dan keterangan dua varian.
+- `docs/SRS Website Sistem Kasir Minimarket Sederhana.md` — SRS v1.5. Bab 8 memuat catatan implementasi: perbedaan rencana vs kode, pemetaan nama field Indonesia ↔ Inggris, batasan keamanan, keterangan dua varian, dan status teknologi terhadap Bab 2.7.
 - `docs/AUDIT.md` — audit kode: kekuatan, temuan yang diperbaiki, temuan terbuka, dan matriks pengujian.
 - `docs/CONFORMANCE.md` — matriks kesesuaian FR-01…FR-19 dan NFR-01…NFR-10 per varian, plus daftar butir tampilan yang belum konsisten dan rencana penutupannya.
 - `docs/design.md` — design system (warna, tipografi, komponen).

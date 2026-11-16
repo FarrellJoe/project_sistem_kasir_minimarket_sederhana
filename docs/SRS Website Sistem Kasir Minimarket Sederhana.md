@@ -2,7 +2,7 @@
 
 ## Website Sistem Kasir Minimarket Sederhana
 
-Versi 1.4 | 15 November 2026 | Status: Draft untuk review
+Versi 1.5 | 17 November 2026 | Status: Draft untuk review
 
 | Informasi | Keterangan |
 | --- | --- |
@@ -24,6 +24,7 @@ Versi 1.4 | 15 November 2026 | Status: Draft untuk review
 | 1.2 | 9 Oktober 2026 | Penambahan use case diagram, class diagram, ERD, dan rencana pengerjaan |
 | 1.3 | 15 November 2026 | Penambahan Bab 8: catatan implementasi, pemetaan nama field, dan batasan keamanan versi 1 |
 | 1.4 | 15 November 2026 | Penyesuaian skala tipografi ke minimum 14 px dan penambahan keterangan dua varian repositori (Bab 8.6) |
+| 1.5 | 17 November 2026 | Penyelesaian Tahap 2 (diskon item, profil, pagination, timer idle), audit kesesuaian 16 November, dan status teknologi versi-lanjutan terhadap Bab 2.7 (Bab 8.7) |
 
 ## 1. PENDAHULUAN
 
@@ -643,3 +644,24 @@ Repositori memuat dua implementasi dari kebutuhan yang sama, sehingga pembaca da
 Status pemenuhan setiap kebutuhan fungsional dan non-fungsional pada kedua varian dicatat pada `docs/CONFORMANCE.md`. Dokumen tersebut juga memuat butir tampilan yang belum seragam (logo, header kasir, pagination) beserta rencana penutupannya, sehingga selisih antarvariansi tidak perlu ditebak dari kode.
 
 Keduanya memakai kunci penyimpanan yang sama (`kasir_products`, `kasir_transactions`, dan seterusnya) sehingga data satu varian dapat dibaca varian lain pada peramban yang sama. Batasan pada 8.3 berlaku untuk keduanya; perbedaan antarvariansi terletak pada cara kode disusun, bukan pada perilaku bisnis atau tingkat keamanan. Perpindahan ke Supabase direncanakan dengan mengganti isi lapisan layanan (`versi-lanjutan/src/lib/api.js`) tanpa mengubah komponen antarmuka.
+
+### 8.7 Status Teknologi versi-lanjutan terhadap Bab 2.7
+
+Bab 2.7 menetapkan rencana teknologi. Tabel berikut mencatat statusnya pada `versi-lanjutan/` per 17 November 2026, setelah audit kesesuaian.
+
+| Lapisan | Rencana (Bab 2.7) | Status | Catatan |
+| --- | --- | --- | --- |
+| Frontend | React 18 + Vite | Terpenuhi | React 18.3.1, Vite 5.4; hasil build berupa HTML/CSS/JS statis |
+| Styling | Tailwind CSS + shadcn/ui | Terpenuhi dengan penyesuaian | Tailwind 3.4; komponen ditulis sendiri mengikuti konvensi shadcn/ui (`class-variance-authority`, `clsx`, `tailwind-merge`) tanpa CLI/paket shadcn |
+| Routing | React Router | Terpenuhi | `react-router-dom` 6 dengan HashRouter, 9 rute, dan penjaga peran |
+| State keranjang | Zustand | Terpenuhi | Sesi, keranjang, dan diskon item |
+| Data server | supabase-js + TanStack Query | Sebagian | TanStack Query 5 dipakai di seluruh halaman; `supabase-js` tidak dipakai karena belum ada backend, data dilayani `src/lib/api.js` dari `localStorage` |
+| Form dan validasi | React Hook Form + Zod | Terpenuhi | Delapan formulir (login, produk, stok, pengguna, pengaturan, diskon, profil) |
+| Grafik | Recharts (alternatif Chart.js) | Terpenuhi | Recharts 3 pada Dashboard dan Laporan, dimuat sebagai chunk terpisah |
+| Database dan backend | Supabase (PostgreSQL, Auth, RLS, RPC) | Belum | Penyimpangan terbesar; batasan NFR-03/NFR-04 pada 8.3 berlaku. Titik ganti backend tetap `src/lib/api.js` |
+| Ekspor | Blob CSV, jsPDF, `window.print` | Terpenuhi | CSV lewat Blob, PDF laporan lewat jsPDF 4 (ringkasan + produk), struk lewat `window.print` |
+| Desain | Figma (akun Free) | Sebagian | Hasil desain ada di `docs/mockup/`; tautan berkas Figma belum dicantumkan di repositori |
+| Versi dan hosting | Git, Vercel/Netlify/Cloudflare Pages | Sebagian | Git dan GitHub aktif; `dist/` siap unggah, URL deploy belum tersedia |
+| Editor | VS Code | Tidak dinilai | Tidak dapat diverifikasi dari repositori |
+
+Konsekuensi yang perlu dicatat pembaca: selama Supabase belum dipakai, otorisasi dan integritas transaksi hanya ditegakkan di sisi peramban (8.3) dan data tidak tersinkron antar perangkat. Selebihnya, stack versi ini mengikuti Bab 2.7; dua butir yang sebelumnya menyimpang (Recharts dan jsPDF) sudah diselaraskan pada 17 November 2026.

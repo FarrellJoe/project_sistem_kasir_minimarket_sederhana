@@ -4,6 +4,7 @@ import { Download, FileText } from 'lucide-react';
 import { buildReport, getSettings, listCategories, listProducts, listTransactions, listUsers } from '../lib/api';
 import { dayKey, downloadFile, money, number, toCSV, todayKey } from '../lib/format';
 import { Badge, Button, Card, CardHeader, EmptyState, Field, Input, Select } from '../components/ui';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 const periods = [
   { id: 'today', label: 'Hari ini' },
@@ -30,6 +31,7 @@ export default function Laporan() {
   const [to, setTo] = useState(todayKey());
   const [cashierId, setCashierId] = useState('');
   const [categoryId, setCategoryId] = useState('');
+  const [pdfBusy, setPdfBusy] = useState(false);
 
   const range = useMemo(() => {
     if (period === 'today') return { from: todayKey(), to: todayKey() };
@@ -55,7 +57,16 @@ export default function Laporan() {
     [transactionsQuery.data, productsQuery.data, range, cashierId, categoryId, invalidRange],
   );
 
-  const maxDaily = Math.max(1, ...((report?.dailySeries || []).map((day) => day.revenue)));
+  const trendData = (report?.dailySeries || []).map((day) => ({
+    label: day.date.slice(5),
+    revenue: Math.round(day.revenue),
+  }));
+  const cashierLabel = cashierId
+    ? (usersQuery.data || []).find((user) => String(user.id) === String(cashierId))?.nama || '-'
+    : 'Semua kasir';
+  const categoryLabel = categoryId
+    ? (categoriesQuery.data || []).find((entry) => String(entry.id) === String(categoryId))?.name || '-'
+    : 'Semua kategori';
 
   const exportCsv = () => {
     if (!report) return;
@@ -72,7 +83,80 @@ export default function Laporan() {
     downloadFile(toCSV(rows), `laporan-${range.from}-${range.to}.csv`, 'text/csv;charset=utf-8');
   };
 
-  const exportPdf = () => window.print();
+  const exportPdf = async () => {
+    if (!report || pdfBusy) return;
+    setPdfBusy(true);
+    try {
+      /* jsPDF dimuat saat dibutuhkan agar bundle awal tetap ringkas. */
+      const { jsPDF } = await import('jspdf');
+      const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+      const margin = 16;
+      let y = 20;
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.text('Laporan Penjualan Brahamart', margin, y);
+      y += 8;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(11);
+      doc.text('Periode: ' + range.from + ' s/d ' + range.to, margin, y);
+      y += 6;
+      doc.text('Filter: ' + cashierLabel + ' | ' + categoryLabel, margin, y);
+      y += 10;
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text('Ringkasan', margin, y);
+      y += 6;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(11);
+      [
+        ['Total penjualan', money(report.revenue)],
+        ['Jumlah transaksi', number(report.transactionCount)],
+        ['Rata-rata transaksi', money(report.average)],
+        ['Item terjual', number(report.itemCount)],
+        ['Estimasi laba kotor', money(report.grossProfit)],
+      ].forEach(([label, value]) => {
+        doc.text(label, margin, y);
+        doc.text(String(value), 120, y);
+        y += 6;
+      });
+
+      y += 4;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text('Produk terjual', margin, y);
+      y += 6;
+      doc.setFontSize(10);
+      doc.text('Produk', margin, y);
+      doc.text('Qty', 130, y);
+      doc.text('Pendapatan', 155, y);
+      y += 4;
+      doc.setFont('helvetica', 'normal');
+      report.topProducts.forEach((item) => {
+        if (y > 272) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.text(String(item.name).slice(0, 52), margin, y);
+        doc.text(String(item.quantity), 130, y);
+        doc.text(money(item.revenue), 155, y);
+        y += 5.5;
+      });
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(110);
+      doc.text(
+        'Dibuat ' + new Intl.DateTimeFormat('id-ID', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date()),
+        margin,
+        290,
+      );
+      doc.save('laporan-' + range.from + '-' + range.to + '.pdf');
+    } finally {
+      setPdfBusy(false);
+    }
+  };
 
   return (
     <div className="grid gap-4">
@@ -102,7 +186,9 @@ export default function Laporan() {
         </Field>
         <div className="flex items-end gap-2 md:col-span-2 md:justify-end">
           <Button variant="secondary" onClick={exportCsv} disabled={!report}><Download size={16} /> Ekspor CSV</Button>
-          <Button variant="secondary" onClick={exportPdf} disabled={!report}><FileText size={16} /> Ekspor PDF</Button>
+          <Button variant="secondary" onClick={exportPdf} disabled={!report || pdfBusy}>
+            <FileText size={16} /> {pdfBusy ? 'Menyiapkan…' : 'Ekspor PDF'}
+          </Button>
         </div>
       </Card>
 
@@ -133,22 +219,31 @@ export default function Laporan() {
           <Card>
             <CardHeader title="Tren penjualan" description={`Omzet per hari · ${range.from} s/d ${range.to}`} />
             <div className="px-5 py-4">
-              {report.dailySeries.length === 0 ? (
+              {trendData.length === 0 ? (
                 <p className="text-sm text-ink-muted">Belum ada transaksi selesai pada periode ini.</p>
               ) : (
-                <div className="flex h-44 items-end gap-2 overflow-x-auto">
-                  {report.dailySeries.map((day) => (
-                    <div key={day.date} className="flex min-w-8 flex-1 flex-col items-center gap-2">
-                      <div className="flex w-full flex-1 items-end">
-                        <div
-                          className="w-full rounded-t-lg bg-primary/80 transition-all hover:bg-primary"
-                          style={{ height: `${Math.max(4, (day.revenue / maxDaily) * 100)}%` }}
-                          title={money(day.revenue)}
-                        />
-                      </div>
-                      <span className="text-sm text-ink-muted tnum">{day.date.slice(5)}</span>
-                    </div>
-                  ))}
+                <div className="h-44" role="img" aria-label="Grafik tren penjualan harian">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={trendData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                      <XAxis
+                        dataKey="label"
+                        tickLine={false}
+                        axisLine={false}
+                        tick={{ fontSize: 14, fill: '#64748B' }}
+                        interval="preserveStartEnd"
+                        minTickGap={12}
+                      />
+                      <YAxis hide domain={[0, 'dataMax']} />
+                      <Tooltip
+                        formatter={(value) => money(value)}
+                        labelStyle={{ fontSize: 14, color: '#0F172A' }}
+                        contentStyle={{ fontSize: 14, borderRadius: 8, borderColor: '#E2E8F0' }}
+                        cursor={{ fill: '#EEF2FF' }}
+                      />
+                      <Bar dataKey="revenue" name="Omzet" fill="#4F46E5" radius={[6, 6, 0, 0]} maxBarSize={40} />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               )}
               <div className="mt-3 flex flex-wrap justify-between gap-2 border-t border-slate-100 pt-3 text-sm text-ink-muted">

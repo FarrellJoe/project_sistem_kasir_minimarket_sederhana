@@ -12,10 +12,14 @@ Versi ini memakai tech stack yang direncanakan pada SRS bab 2.7. Tujuannya bukan
 | Routing | React Router 6 (HashRouter) | `src/App.jsx` |
 | State global | Zustand | `src/stores/index.js` (sesi + keranjang) |
 | Data fetching | TanStack Query 5 | semua halaman (`useQuery`/`useMutation`) |
-| Form + validasi | React Hook Form + Zod | login, produk, stok, pengguna, pengaturan |
+| Form + validasi | React Hook Form + Zod | login, produk, stok, pengguna, pengaturan, diskon, profil |
+| Grafik | Recharts 3 | `Dashboard.jsx`, `Laporan.jsx` (chunk terpisah) |
+| Ekspor PDF | jsPDF 4 | `Laporan.jsx` (dimuat saat tombol Ekspor PDF ditekan) |
 | Ikon | Lucide React | sidebar, tombol, kartu |
 
 Komponen di `src/components/ui.jsx` mengikuti konvensi shadcn/ui (varian lewat `class-variance-authority`, `cn()` dari `clsx` + `tailwind-merge`, `Dialog`/`Card`/`Button`/`Badge`/`Field`) tetapi ditulis langsung di repo. Cara ini dipilih agar tidak perlu menjalankan `npx shadcn-ui init` yang interaktif dan agar hasil build tetap bisa direproduksi dari `npm install` saja.
+
+Supabase (`supabase-js`, Auth, Row Level Security, RPC) **belum dipakai**: seluruh data dilayani `src/lib/api.js` dari `localStorage`, sehingga otorisasi dan integritas transaksi baru ditegakkan di sisi peramban. Titik ganti backend sengaja dipusatkan di satu berkas itu. Status lengkap terhadap SRS Bab 2.7 ada di `docs/SRS …` Bab 8.7 dan `docs/CONFORMANCE.md`.
 
 ## Menjalankan
 
