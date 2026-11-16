@@ -168,15 +168,25 @@ export default function Riwayat() {
           <div className="print-area grid gap-3">
             <ul className="grid gap-2 border-y border-slate-100 py-3">
               {(detail.items || []).map((item) => (
-                <li key={item.productId} className="flex justify-between gap-3 text-sm">
-                  <span>{item.quantity}× {item.name}</span>
-                  <span className="tnum">{money(item.price * item.quantity)}</span>
+                <li key={item.productId} className="grid gap-0.5 text-sm">
+                  <div className="flex justify-between gap-3">
+                    <span>{item.quantity}× {item.name}</span>
+                    <span className="tnum">{money(item.subtotal ?? item.price * item.quantity)}</span>
+                  </div>
+                  {item.discount ? (
+                    <span className="text-sm text-emerald-700">
+                      Diskon item {item.discountType === 'percent' ? item.discountValue + '%' : money(item.discountValue) + '/unit'}: − {money(item.discount)}
+                    </span>
+                  ) : null}
                 </li>
               ))}
             </ul>
             <dl className="grid gap-1 text-sm">
               <div className="flex justify-between"><dt className="text-ink-muted">Subtotal</dt><dd className="tnum">{money(detail.grossSubtotal ?? detail.subtotal)}</dd></div>
-              <div className="flex justify-between"><dt className="text-ink-muted">Diskon</dt><dd className="tnum">{money(detail.discount)}</dd></div>
+              {detail.itemDiscount ? (
+                <div className="flex justify-between"><dt className="text-ink-muted">Diskon item</dt><dd className="text-emerald-700 tnum">− {money(detail.itemDiscount)}</dd></div>
+              ) : null}
+              <div className="flex justify-between"><dt className="text-ink-muted">Diskon transaksi</dt><dd className="tnum">{money(detail.discount)}</dd></div>
               <div className="flex justify-between font-semibold"><dt>Total</dt><dd className="tnum">{money(detail.total)}</dd></div>
               <div className="flex justify-between"><dt className="text-ink-muted">{detail.paymentMethod}</dt><dd className="tnum">{money(detail.received)}</dd></div>
               <div className="flex justify-between"><dt className="text-ink-muted">Kembalian</dt><dd className="tnum">{money(detail.change)}</dd></div>

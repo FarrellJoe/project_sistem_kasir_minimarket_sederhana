@@ -4,14 +4,19 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Barcode, Printer, Search, ShoppingCart, Trash2 } from 'lucide-react';
-import { commitSale, getSettings, listProducts, listTransactions } from '../lib/api';
+import { DISCOUNT_APPROVAL_PERCENT, commitSale, getSettings, listProducts, listTransactions, verifyAdminApproval } from '../lib/api';
 import { dayKey, money, todayKey } from '../lib/format';
-import { useCartStore, useSessionStore } from '../stores';
+import { computeCartTotals, useCartStore, useSessionStore } from '../stores';
 import { Button, Card, CardHeader, Dialog, EmptyState, Field, Input, Select, Toast, cn } from '../components/ui';
 
 const discountSchema = z.object({
   type: z.enum(['nominal', 'percent']),
   value: z.coerce.number().min(0, 'Diskon tidak boleh negatif.'),
+  adminUsername: z.string().optional(),
+  adminPassword: z.string().optional(),
+}).refine((values) => values.type !== 'percent' || values.value <= 100, {
+  path: ['value'],
+  message: 'Persentase diskon harus antara 0 dan 100.',
 });
 
 export default function Kasir() {
@@ -28,6 +33,8 @@ export default function Kasir() {
   const clearCart = useCartStore((state) => state.clear);
   const discount = useCartStore((state) => state.discount);
   const setDiscount = useCartStore((state) => state.setDiscount);
+  const itemDiscounts = useCartStore((state) => state.itemDiscounts);
+  const setItemDiscount = useCartStore((state) => state.setItemDiscount);
   const totals = useCartStore((state) => state.totals());
 
   const [query, setQuery] = useState('');
@@ -36,12 +43,15 @@ export default function Kasir() {
   const [cash, setCash] = useState('');
   const [toast, setToast] = useState(null);
   const [discountOpen, setDiscountOpen] = useState(false);
+  /* null = diskon transaksi; productId = diskon item pada baris keranjang. */
+  const [discountTargetId, setDiscountTargetId] = useState(null);
   const [paymentOpen, setPaymentOpen] = useState(false);
   const [receipt, setReceipt] = useState(null);
   const [receiptSize, setReceiptSize] = useState(null);
   const searchRef = useRef(null);
 
   const settings = settingsQuery.data;
+  const targetItem = discountTargetId ? items.find((item) => item.productId === discountTargetId) : null;
   const products = useMemo(
     () => (productsQuery.data || []).filter((product) => product.isActive),
     [productsQuery.data],
@@ -127,23 +137,33 @@ export default function Kasir() {
       return;
     }
     saleMutation.mutate({
-      items: items.map((item) => ({
-        productId: item.productId,
-        name: item.name,
-        sku: item.sku,
-        unit: item.unit,
-        price: item.price,
-        quantity: item.quantity,
-      })),
+      items: items.map((item) => {
+        const itemDiscount = totals.itemDiscountMap[item.productId] || 0;
+        const detail = itemDiscounts[item.productId];
+        return {
+          productId: item.productId,
+          name: item.name,
+          sku: item.sku,
+          unit: item.unit,
+          price: item.price,
+          quantity: item.quantity,
+          discount: itemDiscount,
+          discountType: detail?.type || '',
+          discountValue: detail?.value || 0,
+          discountApprovedBy: detail?.approvedBy || '',
+          subtotal: item.price * item.quantity - itemDiscount,
+        };
+      }),
       paymentMethod: method,
       received: method === 'Tunai' ? cashValue : total,
       totals: {
-        subtotal: totals.total,
+        subtotal: totals.subtotal,
         grossSubtotal: totals.grossSubtotal,
-        itemDiscount: 0,
-        discount: totals.discountAmount,
+        itemDiscount: totals.itemDiscount,
+        discount: totals.transactionDiscount,
         discountType: discount.type,
         discountValue: Number(discount.value || 0),
+        discountApprovedBy: discount.approvedBy || '',
         total,
       },
     });
@@ -151,20 +171,77 @@ export default function Kasir() {
 
   const discountForm = useForm({
     resolver: zodResolver(discountSchema),
-    defaultValues: { type: discount.type, value: discount.value },
+    defaultValues: { type: 'nominal', value: 0, adminUsername: '', adminPassword: '' },
   });
 
-  const applyDiscount = (values) => {
-    const amount = values.type === 'percent'
-      ? Math.round((totals.grossSubtotal * Number(values.value)) / 100)
-      : Number(values.value);
-    if (amount > totals.grossSubtotal) {
-      discountForm.setError('value', { message: 'Diskon melebihi subtotal.' });
+  /* Pratinjau total untuk nilai yang sedang diisi di dialog diskon. */
+  const watchedType = discountForm.watch('type');
+  const watchedValue = Number(discountForm.watch('value')) || 0;
+  const discountProposal = computeCartTotals(
+    items,
+    discountTargetId
+      ? { ...itemDiscounts, [discountTargetId]: { type: watchedType, value: watchedValue } }
+      : itemDiscounts,
+    discountTargetId ? discount : { type: watchedType, value: watchedValue },
+  );
+  const needsApproval = session?.role !== 'admin'
+    && watchedValue > 0
+    && discountProposal.discountPercent > DISCOUNT_APPROVAL_PERCENT;
+
+  const openDiscount = (productId = null) => {
+    if (!items.length) {
+      notify('Tambahkan produk sebelum menerapkan diskon.', 'error');
       return;
     }
-    setDiscount({ type: values.type, value: Number(values.value) });
+    const current = productId ? itemDiscounts[productId] : discount;
+    setDiscountTargetId(productId);
+    discountForm.reset({
+      type: current?.type || 'nominal',
+      value: current?.value ?? 0,
+      adminUsername: '',
+      adminPassword: '',
+    });
+    setDiscountOpen(true);
+  };
+
+  const applyDiscount = async (values) => {
+    const item = discountTargetId ? items.find((entry) => entry.productId === discountTargetId) : null;
+    const base = item ? item.price : totals.subtotal;
+    const value = Number(values.value) || 0;
+    if (values.type === 'nominal' && value > base) {
+      discountForm.setError('value', {
+        message: item
+          ? 'Nominal diskon tidak boleh melebihi harga per unit.'
+          : 'Nominal diskon tidak boleh melebihi subtotal setelah diskon item.',
+      });
+      return;
+    }
+
+    const projected = computeCartTotals(
+      items,
+      discountTargetId ? { ...itemDiscounts, [discountTargetId]: { type: values.type, value } } : itemDiscounts,
+      discountTargetId ? discount : { type: values.type, value },
+    );
+    let approvedBy = '';
+    if (session?.role !== 'admin' && value > 0 && projected.discountPercent > DISCOUNT_APPROVAL_PERCENT) {
+      try {
+        const admin = await verifyAdminApproval(
+          { identifier: values.adminUsername, password: values.adminPassword },
+          session,
+        );
+        approvedBy = admin.name;
+      } catch (error) {
+        discountForm.setError('adminPassword', {
+          message: error.message || 'Persetujuan Admin tidak dapat diverifikasi.',
+        });
+        return;
+      }
+    }
+
+    if (discountTargetId) setItemDiscount(discountTargetId, { type: values.type, value, approvedBy });
+    else setDiscount({ type: values.type, value, approvedBy });
     setDiscountOpen(false);
-    notify(values.value > 0 ? 'Diskon diterapkan.' : 'Diskon dihapus.');
+    notify(value > 0 ? 'Diskon diterapkan.' : 'Diskon dihapus.');
   };
 
   useEffect(() => {
@@ -174,7 +251,7 @@ export default function Kasir() {
         searchRef.current?.focus();
       } else if (event.key === 'F4') {
         event.preventDefault();
-        setDiscountOpen(true);
+        openDiscount();
       } else if (event.key === 'F9') {
         event.preventDefault();
         if (items.length) {
@@ -185,7 +262,7 @@ export default function Kasir() {
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [items.length, clearCart]);
+  }, [items.length, itemDiscounts, discount, clearCart, openDiscount]);
 
   const now = new Date();
   const shift = now.getHours() < 12 ? 'Shift Pagi' : now.getHours() < 18 ? 'Shift Siang' : 'Shift Malam';
@@ -270,7 +347,7 @@ export default function Kasir() {
             description={`${totals.itemCount} item di keranjang`}
             action={
               <div className="flex gap-2">
-                <Button variant="secondary" size="sm" onClick={() => setDiscountOpen(true)}>Diskon (F4)</Button>
+                <Button variant="secondary" size="sm" onClick={() => openDiscount()}>Diskon (F4)</Button>
                 <Button variant="outlineDanger" size="sm" onClick={() => { clearCart(); notify('Transaksi dibatalkan.'); }} disabled={!items.length}>
                   Batal (F9)
                 </Button>
@@ -291,11 +368,23 @@ export default function Kasir() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((item) => (
+                  {items.map((item) => {
+                    const lineDiscount = totals.itemDiscountMap[item.productId] || 0;
+                    return (
                     <tr key={item.productId} className="border-b border-slate-50 last:border-0">
                       <td className="px-5 py-3">
                         <strong className="block text-ink">{item.emoji} {item.name}</strong>
                         <span className="text-sm text-ink-muted">{item.sku} · {money(item.price)} / {item.unit}</span>
+                        {lineDiscount ? (
+                          <span className="block text-sm font-medium text-emerald-700">Diskon item: − {money(lineDiscount)}</span>
+                        ) : null}
+                        <button
+                          type="button"
+                          onClick={() => openDiscount(item.productId)}
+                          className="mt-1 text-sm font-medium text-primary hover:underline"
+                        >
+                          {lineDiscount ? 'Ubah diskon item' : 'Tambah diskon item'}
+                        </button>
                       </td>
                       <td className="px-3 py-3">
                         <div className="inline-flex items-center rounded-lg border border-slate-200">
@@ -304,14 +393,22 @@ export default function Kasir() {
                           <button type="button" className="px-2.5 py-1 text-lg text-ink-muted hover:text-ink" onClick={() => setQuantity(item.productId, item.quantity + 1)} aria-label={`Tambah ${item.name}`}>+</button>
                         </div>
                       </td>
-                      <td className="px-3 py-3 text-right font-medium text-ink tnum">{money(item.price * item.quantity)}</td>
+                      <td className="px-3 py-3 text-right font-medium text-ink tnum">
+                        {lineDiscount ? (
+                          <>
+                            <span className="block text-sm font-normal text-ink-muted line-through">{money(item.price * item.quantity)}</span>
+                            <span>{money(item.price * item.quantity - lineDiscount)}</span>
+                          </>
+                        ) : money(item.price * item.quantity)}
+                      </td>
                       <td className="px-5 py-3 text-right">
                         <button type="button" onClick={() => removeItem(item.productId)} className="text-ink-muted hover:text-danger" aria-label={`Hapus ${item.name}`}>
                           <Trash2 size={16} />
                         </button>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -363,7 +460,10 @@ export default function Kasir() {
 
           <dl className="grid gap-2 text-sm">
             <div className="flex justify-between"><dt className="text-ink-muted">Subtotal</dt><dd className="tnum">{money(totals.grossSubtotal)}</dd></div>
-            <div className="flex justify-between"><dt className="text-ink-muted">Diskon</dt><dd className="tnum">{money(totals.discountAmount)}</dd></div>
+            {totals.itemDiscount ? (
+              <div className="flex justify-between"><dt className="text-ink-muted">Diskon item</dt><dd className="text-emerald-700 tnum">− {money(totals.itemDiscount)}</dd></div>
+            ) : null}
+            <div className="flex justify-between"><dt className="text-ink-muted">Diskon transaksi</dt><dd className="tnum">{money(totals.transactionDiscount)}</dd></div>
             <div className="flex justify-between"><dt className="text-ink-muted">PPN {settings?.vatRate ?? 11}%</dt><dd className="text-ink-muted">Sudah termasuk</dd></div>
           </dl>
 
@@ -410,11 +510,24 @@ export default function Kasir() {
       <Dialog
         open={discountOpen}
         onClose={() => setDiscountOpen(false)}
-        title="Diskon transaksi"
-        description="Diskon di atas 10% memerlukan persetujuan Admin sesuai ketentuan bisnis."
+        title={discountTargetId ? 'Diskon item' : 'Diskon transaksi'}
+        description={discountTargetId
+          ? 'Diskon nominal berlaku per unit untuk ' + (targetItem?.name || 'produk ini') + '.'
+          : 'Diskon transaksi dihitung setelah diskon item. Di atas ' + DISCOUNT_APPROVAL_PERCENT + '% perlu persetujuan Admin.'}
         footer={
           <>
-            <Button variant="secondary" type="button" onClick={() => { setDiscount({ type: 'nominal', value: 0 }); setDiscountOpen(false); }}>Hapus diskon</Button>
+            <Button
+              variant="secondary"
+              type="button"
+              onClick={() => {
+                if (discountTargetId) setItemDiscount(discountTargetId, { type: 'nominal', value: 0 });
+                else setDiscount({ type: 'nominal', value: 0, approvedBy: '' });
+                setDiscountOpen(false);
+                notify('Diskon dihapus.');
+              }}
+            >
+              Hapus diskon
+            </Button>
             <Button type="submit" form="discount-form">Terapkan</Button>
           </>
         }
@@ -426,9 +539,46 @@ export default function Kasir() {
               <option value="percent">Persentase (%)</option>
             </Select>
           </Field>
-          <Field label="Nilai diskon" error={discountForm.formState.errors.value?.message}>
+          <Field
+            label="Nilai diskon"
+            error={discountForm.formState.errors.value?.message}
+            hint={discountTargetId ? 'Nominal dihitung per unit.' : undefined}
+          >
             <Input type="number" min="0" step="1" {...discountForm.register('value')} />
           </Field>
+
+          <div className="rounded-lg bg-slate-50 px-3 py-2 text-sm">
+            <div className="flex justify-between gap-2">
+              <span className="text-ink-muted">Total setelah diskon</span>
+              <strong className="text-ink tnum">{money(discountProposal.total)}</strong>
+            </div>
+            <div className="mt-1 flex justify-between gap-2">
+              <span className="text-ink-muted">Diskon keseluruhan</span>
+              <span className="text-ink-muted tnum">
+                {discountProposal.discountPercent.toLocaleString('id-ID', { maximumFractionDigits: 1 })}%
+              </span>
+            </div>
+          </div>
+
+          {needsApproval ? (
+            <div className="grid gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+              <p className="text-sm text-amber-900">
+                Diskon di atas {DISCOUNT_APPROVAL_PERCENT}% memerlukan persetujuan Admin. Minta Admin memasukkan
+                username dan kata sandinya.
+              </p>
+              <Field label="Username Admin">
+                <Input {...discountForm.register('adminUsername')} autoComplete="off" placeholder="admin" />
+              </Field>
+              <Field label="Kata sandi Admin" error={discountForm.formState.errors.adminPassword?.message}>
+                <Input
+                  type="password"
+                  {...discountForm.register('adminPassword')}
+                  autoComplete="off"
+                  placeholder="Kata sandi Admin"
+                />
+              </Field>
+            </div>
+          ) : null}
         </form>
       </Dialog>
 
@@ -506,6 +656,9 @@ export default function Kasir() {
             </ul>
             <dl className="mt-2 grid gap-1">
               <div className="flex justify-between"><dt>Subtotal</dt><dd className="tnum">{money(receipt.grossSubtotal)}</dd></div>
+              {receipt.itemDiscount ? (
+                <div className="flex justify-between"><dt>Diskon item</dt><dd className="tnum">− {money(receipt.itemDiscount)}</dd></div>
+              ) : null}
               <div className="flex justify-between"><dt>Diskon</dt><dd className="tnum">{money(receipt.discount)}</dd></div>
               <div className="flex justify-between font-semibold"><dt>Total</dt><dd className="tnum">{money(receipt.total)}</dd></div>
               <div className="flex justify-between"><dt>{receipt.paymentMethod}</dt><dd className="tnum">{money(receipt.received)}</dd></div>

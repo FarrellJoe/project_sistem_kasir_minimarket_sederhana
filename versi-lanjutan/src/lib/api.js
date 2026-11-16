@@ -113,9 +113,32 @@ export async function login({ identifier, password }) {
   return session;
 }
 
+/* Batas diskon yang boleh disetujui Kasir sendiri (FR-14). */
+export const DISCOUNT_APPROVAL_PERCENT = 10;
+
 export async function logout(session) {
   await logActivity({ action: 'auth.logout', entity: 'user', summary: 'Keluar dari sistem' }, session);
   DB.remove(KEYS.session);
+}
+
+/* Persetujuan Admin untuk diskon di atas 10% (FR-14). Verifikasi dilakukan di
+   lapisan layanan, bukan hanya dengan menyembunyikan tombol di antarmuka. */
+export async function verifyAdminApproval({ identifier, password }, session) {
+  const key = String(identifier || '').trim().toLowerCase();
+  if (!key || !password) fail('Masukkan username dan kata sandi Admin.', 'approval');
+  const hash = await sha256(password);
+  const admin = readArray(KEYS.users).find((user) =>
+    user && user.role === 'admin' && user.isActive &&
+    (String(user.username || '').toLowerCase() === key || String(user.email || '').toLowerCase() === key) &&
+    user.passwordHash === hash);
+  if (!admin) fail('Akun Admin atau kata sandi tidak valid.', 'approval');
+  await logActivity({
+    action: 'sale.discount.approve',
+    entity: 'user',
+    entityId: admin.id,
+    summary: 'Menyetujui diskon di atas ' + DISCOUNT_APPROVAL_PERCENT + '%',
+  }, session);
+  return { id: admin.id, name: admin.nama || admin.username };
 }
 
 /* ---------- Produk dan kategori ---------- */
@@ -307,14 +330,15 @@ export async function commitSale(payload, session) {
     cashierName: session.nama,
     paymentMethod: payload.paymentMethod,
     itemCount,
-    items: payload.items.map((item) => ({ ...item, subtotal: item.price * item.quantity })),
+    items: payload.items.map((item) => ({ ...item, subtotal: item.subtotal ?? item.price * item.quantity })),
     subtotal: payload.totals.subtotal,
     grossSubtotal: payload.totals.grossSubtotal,
     itemDiscount: payload.totals.itemDiscount,
     discount: payload.totals.discount,
-    totalDiscount: payload.totals.discount,
+    totalDiscount: payload.totals.itemDiscount + payload.totals.discount,
     discountType: payload.totals.discountType,
     discountValue: payload.totals.discountValue,
+    discountApprovedBy: payload.totals.discountApprovedBy || '',
     total: payload.totals.total,
     received: payload.received,
     change: Math.max(0, payload.received - payload.totals.total),
