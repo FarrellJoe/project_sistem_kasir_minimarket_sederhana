@@ -46,8 +46,13 @@ export default function Login() {
     <main className="grid min-h-screen lg:grid-cols-2">
       <section className="hidden flex-col justify-between bg-sidebar p-10 text-white lg:flex">
         <div className="flex items-center gap-3">
-          <span className="grid h-12 w-12 place-items-center rounded-xl bg-white" aria-hidden="true">
-            <img src={`${import.meta.env.BASE_URL}brand/brahamart-mark.png`} alt="" className="h-10 w-10 object-contain" />
+          <span className="relative grid h-12 w-12 place-items-center overflow-hidden rounded-xl bg-white" aria-hidden="true">
+            {/* Ukuran mark mengikuti versi-murni: gambar 128 px di tile 48 px. */}
+            <img
+              src={`${import.meta.env.BASE_URL}brand/brahamart-mark.png`}
+              alt=""
+              className="absolute left-1/2 top-1/2 h-32 w-32 max-w-none -translate-x-1/2 -translate-y-1/2 object-contain"
+            />
           </span>
           <div>
             <strong className="block font-heading text-xl">Brahamart</strong>

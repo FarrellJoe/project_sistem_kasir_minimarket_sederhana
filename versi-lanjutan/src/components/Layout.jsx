@@ -58,8 +58,13 @@ export default function Layout({ title, subtitle, actions, children }) {
         )}
       >
         <div className="flex items-center gap-2 px-5 py-5">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-white" aria-hidden="true">
-            <img src={`${import.meta.env.BASE_URL}brand/brahamart-mark.png`} alt="" className="h-9 w-9 object-contain" />
+          <span className="relative grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-[9px] bg-white" aria-hidden="true">
+            {/* Mark diperbesar seperti versi-murni (gambar 88 px di tile 36 px) agar keranjang terbaca jelas. */}
+            <img
+              src={`${import.meta.env.BASE_URL}brand/brahamart-mark.png`}
+              alt=""
+              className="absolute left-1/2 top-1/2 h-[88px] w-[88px] max-w-none -translate-x-1/2 -translate-y-1/2 object-contain"
+            />
           </span>
           <span className="font-heading text-lg font-semibold">Brahamart</span>
           <button type="button" className="ml-auto rounded p-1 lg:hidden" onClick={() => setMenuOpen(false)} aria-label="Tutup navigasi">
