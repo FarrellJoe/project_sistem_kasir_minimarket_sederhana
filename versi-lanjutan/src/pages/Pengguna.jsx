@@ -143,8 +143,8 @@ export default function Pengguna() {
                   <tr key={user.id} className="border-b border-slate-50 last:border-0">
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2">
-                        <span className="grid h-8 w-8 place-items-center rounded-full bg-primary-tint text-sm font-semibold text-primary-hover">
-                          {initials(user.nama)}
+                        <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-primary-tint text-sm font-semibold text-primary-hover">
+                          {user.photo ? <img src={user.photo} alt="" className="h-full w-full object-cover" /> : initials(user.nama)}
                         </span>
                         <span>
                           <strong className="block text-ink">{user.nama}{isMe ? ' · Anda' : ''}</strong>

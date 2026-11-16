@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import {
-  BarChart3, History, LayoutDashboard, LogOut, Menu, Package, Settings, ShoppingCart, Users, Warehouse, X,
+  BarChart3, History, LayoutDashboard, LogOut, Menu, Package, Settings, ShoppingCart, UserRound, Users, Warehouse, X,
 } from 'lucide-react';
 import { useSessionStore } from '../stores';
 import { initials } from '../lib/format';
@@ -17,6 +17,7 @@ const HINTS = {
   '/laporan': { title: 'Laporan Penjualan', text: 'Analisis performa penjualan per periode.' },
   '/pengguna': { title: 'Manajemen Pengguna', text: 'Atur akun, peran, dan akses ke sistem toko.' },
   '/pengaturan': { title: 'Pengaturan Toko', text: 'Identitas toko dan opsi sistem.' },
+  '/profil': { title: 'Profil Saya', text: 'Perbarui informasi pribadi dan keamanan akun.' },
 };
 
 const NAV = [
@@ -28,6 +29,7 @@ const NAV = [
   { to: '/laporan', label: 'Laporan', icon: BarChart3, roles: ['admin'] },
   { to: '/pengguna', label: 'Pengguna', icon: Users, roles: ['admin'] },
   { to: '/pengaturan', label: 'Pengaturan', icon: Settings, roles: ['admin'] },
+  { to: '/profil', label: 'Profil Saya', icon: UserRound, roles: ['admin', 'kasir'] },
 ];
 
 export default function Layout({ title, subtitle, actions, children }) {

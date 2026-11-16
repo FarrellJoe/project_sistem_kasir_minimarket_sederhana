@@ -509,6 +509,68 @@ export async function resetUserPassword({ id, password }, session) {
   return { id };
 }
 
+/* ---------- Profil sendiri (FR-19) ---------- */
+export async function getMyProfile(session) {
+  const user = readArray(KEYS.users).find((entry) => String(entry.id) === String(session?.userId));
+  if (!user) fail('Akun tidak ditemukan. Silakan masuk kembali.', 'not-found');
+  return user;
+}
+
+/* Membatasi foto profil agar localStorage tidak cepat penuh. */
+const MAX_PHOTO_CHARS = 400 * 1024;
+
+export async function updateProfile({ nama, email, photo }, session) {
+  const users = readArray(KEYS.users);
+  const me = users.find((entry) => String(entry.id) === String(session?.userId));
+  if (!me) fail('Akun tidak ditemukan. Silakan masuk kembali.', 'not-found');
+
+  const cleanName = String(nama || '').trim();
+  const cleanEmail = String(email || '').trim();
+  if (!cleanName) fail('Nama lengkap wajib diisi.', 'nama');
+  if (!cleanEmail) fail('Email atau nomor telepon wajib diisi.', 'email');
+  const duplicate = users.some((user) =>
+    String(user.id) !== String(me.id) && String(user.email || '').toLowerCase() === cleanEmail.toLowerCase());
+  if (duplicate) fail('Email atau nomor telepon sudah digunakan akun lain.', 'duplicate');
+  if (photo && String(photo).length > MAX_PHOTO_CHARS) fail('Ukuran foto terlalu besar.', 'photo');
+
+  const updated = { ...me, nama: cleanName, email: cleanEmail };
+  if (photo !== undefined) updated.photo = photo || '';
+  DB.write(KEYS.users, users.map((user) => (String(user.id) === String(me.id) ? updated : user)));
+
+  /* Nama pada sesi ikut diperbarui agar topbar dan struk berikutnya konsisten. */
+  const current = DB.read(KEYS.session, null);
+  if (current) DB.write(KEYS.session, { ...current, nama: updated.nama });
+
+  await logActivity({
+    action: 'profile.update',
+    entity: 'user',
+    entityId: me.id,
+    summary: updated.nama + ' memperbarui profil sendiri',
+  }, { ...session, nama: updated.nama });
+  return updated;
+}
+
+export async function changePassword({ currentPassword, newPassword }, session) {
+  if (String(newPassword || '').length < 8) fail('Password baru minimal 8 karakter.', 'password');
+  if (String(currentPassword || '') === String(newPassword || '')) fail('Password baru harus berbeda dari password lama.', 'password');
+
+  const users = readArray(KEYS.users);
+  const me = users.find((entry) => String(entry.id) === String(session?.userId));
+  if (!me) fail('Akun tidak ditemukan. Silakan masuk kembali.', 'not-found');
+  const currentHash = await sha256(currentPassword || '');
+  if (me.passwordHash !== currentHash) fail('Password saat ini tidak sesuai.', 'password');
+
+  const passwordHash = await sha256(newPassword);
+  DB.write(KEYS.users, users.map((user) => (String(user.id) === String(me.id) ? { ...user, passwordHash } : user)));
+  await logActivity({
+    action: 'profile.password',
+    entity: 'user',
+    entityId: me.id,
+    summary: me.nama + ' mengganti password sendiri',
+  }, session);
+  return { id: me.id };
+}
+
 /* ---------- Pengaturan ---------- */
 export async function getSettings() {
   const saved = DB.read(KEYS.settings, {});

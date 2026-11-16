@@ -12,6 +12,7 @@ import Riwayat from './pages/Riwayat.jsx';
 import Laporan from './pages/Laporan.jsx';
 import Pengguna from './pages/Pengguna.jsx';
 import Pengaturan from './pages/Pengaturan.jsx';
+import Profil from './pages/Profil.jsx';
 
 function RequireAuth({ roles, children }) {
   const session = useSessionStore((state) => state.session);
@@ -125,6 +126,16 @@ export default function App() {
           <RequireAuth roles={['admin']}>
             <Layout title="Pengaturan" subtitle="Identitas toko dan opsi sistem">
               <Pengaturan />
+            </Layout>
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/profil"
+        element={
+          <RequireAuth roles={['admin', 'kasir']}>
+            <Layout title="Profil Saya" subtitle="Informasi pribadi dan keamanan akun">
+              <Profil />
             </Layout>
           </RequireAuth>
         }
