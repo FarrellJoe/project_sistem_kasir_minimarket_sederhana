@@ -346,7 +346,16 @@ export async function commitSale(payload, session) {
     cashierName: session.nama,
     paymentMethod: payload.paymentMethod,
     itemCount,
-    items: payload.items.map((item) => ({ ...item, subtotal: item.subtotal ?? item.price * item.quantity })),
+    items: payload.items.map((item) => {
+      const product = products.find((entry) => entry.id === item.productId);
+      return {
+        ...item,
+        /* Snapshot kategori dan harga beli agar laporan tetap akurat walau produk berubah. */
+        categoryId: item.categoryId || product?.categoryId || '',
+        purchasePrice: item.purchasePrice ?? product?.purchasePrice ?? 0,
+        subtotal: item.subtotal ?? item.price * item.quantity,
+      };
+    }),
     subtotal: payload.totals.subtotal,
     grossSubtotal: payload.totals.grossSubtotal,
     itemDiscount: payload.totals.itemDiscount,
@@ -467,6 +476,9 @@ export async function saveUser(payload, session) {
   if (duplicate) fail('Username atau kontak sudah digunakan.', 'duplicate');
 
   const existing = payload.id ? users.find((user) => user.id === payload.id) : null;
+  if (existing && String(existing.id) === String(session?.userId) && !payload.isActive) {
+    fail('Anda tidak dapat menonaktifkan akun sendiri.', 'self');
+  }
   if (existing && existing.role === 'admin' && (payload.role !== 'admin' || !payload.isActive)) {
     const otherAdmins = users.filter((user) => user.role === 'admin' && user.isActive && user.id !== existing.id);
     if (!otherAdmins.length) fail('Sistem harus memiliki minimal satu Admin aktif.', 'last-admin');
@@ -500,6 +512,9 @@ export async function toggleUser({ id, isActive }, session) {
   const users = readArray(KEYS.users);
   const target = users.find((user) => user.id === id);
   if (!target) fail('Pengguna tidak ditemukan.', 'not-found');
+  if (!isActive && String(target.id) === String(session?.userId)) {
+    fail('Anda tidak dapat menonaktifkan akun sendiri.', 'self');
+  }
   if (target.role === 'admin' && !isActive) {
     const otherAdmins = users.filter((user) => user.role === 'admin' && user.isActive && user.id !== id);
     if (!otherAdmins.length) fail('Sistem harus memiliki minimal satu Admin aktif.', 'last-admin');
@@ -614,48 +629,108 @@ export async function saveSettings(settings, session) {
 }
 
 /* ---------- Laporan ---------- */
-export function buildReport(transactions, { from, to, cashierId, categoryId } = {}) {
-  const inRange = (transactions || []).filter((transaction) => {
-    if (transaction.status === 'dibatalkan') return false;
-    if (cashierId && String(transaction.cashierId) !== String(cashierId)) return false;
-    if (from && dayKey(transaction.createdAt) < from) return false;
-    if (to && dayKey(transaction.createdAt) > to) return false;
-    return true;
-  });
+/* Laporan mengalokasikan total transaksi ke item secara proporsional, sehingga
+   filter kategori mengurangi omzet dan laba secara proporsional (pola yang sama
+   dengan reports.js versi-murni). Laba kotor memakai omzet setelah diskon. */
+export function buildReport(transactions, { from, to, cashierId, categoryId, products = [] } = {}) {
+  const productById = new Map((products || []).map((product) => [String(product.id), product]));
+  const records = [];
+  const productTotals = new Map();
+  const paymentTotals = new Map();
+  const dailyTotals = new Map();
+  let missingCostLines = 0;
 
-  const items = [];
-  inRange.forEach((transaction) => {
-    (transaction.items || []).forEach((item) => {
-      if (categoryId && item.categoryId !== categoryId) return;
-      items.push({ ...item, transactionId: transaction.id, createdAt: transaction.createdAt });
+  (transactions || []).forEach((transaction) => {
+    if (transaction.status === 'dibatalkan') return;
+    if (cashierId && String(transaction.cashierId) !== String(cashierId)) return;
+    const dateKey = dayKey(transaction.createdAt);
+    if (from && dateKey < from) return;
+    if (to && dateKey > to) return;
+
+    const allLines = (transaction.items || []).map((item) => {
+      const product = productById.get(String(item.productId));
+      const price = Number(item.price ?? product?.salePrice ?? 0);
+      const quantity = Number(item.quantity || 0);
+      const lineBase = item.subtotal != null
+        ? Math.max(0, Number(item.subtotal))
+        : price * quantity;
+      const cost = item.purchasePrice != null
+        ? Number(item.purchasePrice)
+        : product && Number.isFinite(Number(product.purchasePrice))
+          ? Number(product.purchasePrice)
+          : null;
+      return {
+        ...item,
+        categoryId: item.categoryId || product?.categoryId || '',
+        quantity,
+        lineBase,
+        cost,
+      };
+    }).filter((line) => line.quantity > 0);
+    if (!allLines.length) return;
+
+    const matching = categoryId
+      ? allLines.filter((line) => String(line.categoryId) === String(categoryId))
+      : allLines;
+    if (!matching.length) return;
+
+    const baseTotal = allLines.reduce((sum, line) => sum + line.lineBase, 0);
+    const saleTotal = Number(transaction.total || 0);
+    const allocationRate = baseTotal > 0 ? saleTotal / baseTotal : 0;
+
+    const recordItems = matching.map((line) => {
+      const revenue = line.lineBase * allocationRate;
+      const costAmount = line.cost == null ? null : line.cost * line.quantity;
+      return { ...line, revenue, costAmount, profit: costAmount == null ? null : revenue - costAmount };
     });
+
+    const revenue = recordItems.reduce((sum, line) => sum + line.revenue, 0);
+    const profit = recordItems.reduce((sum, line) => sum + (line.profit ?? 0), 0);
+    missingCostLines += recordItems.filter((line) => line.profit == null).length;
+
+    records.push({
+      transaction,
+      dateKey,
+      items: recordItems,
+      revenue,
+      units: recordItems.reduce((sum, line) => sum + line.quantity, 0),
+    });
+
+    recordItems.forEach((line) => {
+      const key = String(line.productId || line.name);
+      const row = productTotals.get(key) || { productId: key, name: line.name, quantity: 0, revenue: 0 };
+      row.quantity += line.quantity;
+      row.revenue += line.revenue;
+      productTotals.set(key, row);
+    });
+
+    const method = transaction.paymentMethod || 'Tunai';
+    const payment = paymentTotals.get(method) || { revenue: 0, count: 0 };
+    payment.revenue += revenue;
+    payment.count += 1;
+    paymentTotals.set(method, payment);
+
+    dailyTotals.set(dateKey, (dailyTotals.get(dateKey) || 0) + revenue);
   });
 
-  const revenue = inRange.reduce((sum, transaction) => sum + Number(transaction.total || 0), 0);
-  const grossProfit = items.reduce((sum, item) =>
-    sum + (Number(item.price) - Number(item.purchasePrice || 0)) * Number(item.quantity || 0), 0);
-  const byMethod = inRange.reduce((acc, transaction) => {
-    const key = transaction.paymentMethod || 'Tunai';
-    acc[key] = (acc[key] || 0) + Number(transaction.total || 0);
-    return acc;
-  }, {});
-
-  const productMap = new Map();
-  items.forEach((item) => {
-    const entry = productMap.get(item.productId) || { productId: item.productId, name: item.name, quantity: 0, revenue: 0 };
-    entry.quantity += Number(item.quantity || 0);
-    entry.revenue += Number(item.price || 0) * Number(item.quantity || 0);
-    productMap.set(item.productId, entry);
-  });
+  const revenue = records.reduce((sum, record) => sum + record.revenue, 0);
+  const grossProfit = records.reduce((sum, record) =>
+    sum + record.items.reduce((inner, line) => inner + (line.profit ?? 0), 0), 0);
+  const dailySeries = Array.from(dailyTotals.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([date, value]) => ({ date, revenue: value }));
 
   return {
-    transactionCount: inRange.length,
-    itemCount: items.reduce((sum, item) => sum + Number(item.quantity || 0), 0),
+    transactionCount: records.length,
+    itemCount: records.reduce((sum, record) => sum + record.units, 0),
     revenue,
-    average: inRange.length ? Math.round(revenue / inRange.length) : 0,
+    average: records.length ? Math.round(revenue / records.length) : 0,
     grossProfit,
-    byMethod,
-    topProducts: Array.from(productMap.values()).sort((a, b) => b.quantity - a.quantity),
-    transactions: inRange,
+    missingCostLines,
+    dailySeries,
+    byMethod: Object.fromEntries(Array.from(paymentTotals.entries()).map(([method, value]) => [method, value.revenue])),
+    topProducts: Array.from(productTotals.values()).sort((a, b) => b.quantity - a.quantity),
+    transactions: records.map((record) => record.transaction),
+    records,
   };
 }

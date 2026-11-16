@@ -59,8 +59,12 @@ export default function Produk() {
 
   const form = useForm({ resolver: zodResolver(productSchema), defaultValues: emptyProduct });
   const {
-    register, handleSubmit, reset, formState: { errors, isSubmitting },
+    register, handleSubmit, reset, watch, formState: { errors, isSubmitting },
   } = form;
+  const salePriceValue = Number(watch('salePrice'));
+  const purchasePriceValue = Number(watch('purchasePrice'));
+  const priceBelowCost = Number.isFinite(salePriceValue) && Number.isFinite(purchasePriceValue)
+    && salePriceValue > 0 && salePriceValue < purchasePriceValue;
 
   const categoryName = (id) => categoriesQuery.data?.find((entry) => entry.id === id)?.name || '-';
 
@@ -309,6 +313,11 @@ export default function Produk() {
           <Field label="Harga jual" error={errors.salePrice?.message}>
             <Input type="number" min="0" {...register('salePrice')} />
           </Field>
+          {priceBelowCost ? (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 sm:col-span-2">
+              Harga jual di bawah harga beli. Anda tetap dapat menyimpan.
+            </p>
+          ) : null}
           <Field label="Stok" error={errors.stock?.message}>
             <Input type="number" min="0" step="1" {...register('stock')} />
           </Field>

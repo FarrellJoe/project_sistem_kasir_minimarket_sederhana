@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Download, FileText } from 'lucide-react';
-import { buildReport, getSettings, listCategories, listTransactions, listUsers } from '../lib/api';
+import { buildReport, getSettings, listCategories, listProducts, listTransactions, listUsers } from '../lib/api';
 import { dayKey, downloadFile, money, number, toCSV, todayKey } from '../lib/format';
 import { Badge, Button, Card, CardHeader, EmptyState, Field, Input, Select } from '../components/ui';
 
@@ -22,6 +22,7 @@ export default function Laporan() {
   const transactionsQuery = useQuery({ queryKey: ['transactions'], queryFn: listTransactions });
   const usersQuery = useQuery({ queryKey: ['users'], queryFn: listUsers });
   const categoriesQuery = useQuery({ queryKey: ['categories'], queryFn: listCategories });
+  const productsQuery = useQuery({ queryKey: ['products'], queryFn: listProducts });
   const settingsQuery = useQuery({ queryKey: ['settings'], queryFn: getSettings });
 
   const [period, setPeriod] = useState('7d');
@@ -43,9 +44,18 @@ export default function Laporan() {
   const invalidRange = Boolean(range.from && range.to && range.from > range.to);
 
   const report = useMemo(
-    () => (invalidRange ? null : buildReport(transactionsQuery.data || [], { ...range, cashierId, categoryId })),
-    [transactionsQuery.data, range, cashierId, categoryId, invalidRange],
+    () => (invalidRange
+      ? null
+      : buildReport(transactionsQuery.data || [], {
+        ...range,
+        cashierId,
+        categoryId,
+        products: productsQuery.data || [],
+      })),
+    [transactionsQuery.data, productsQuery.data, range, cashierId, categoryId, invalidRange],
   );
+
+  const maxDaily = Math.max(1, ...((report?.dailySeries || []).map((day) => day.revenue)));
 
   const exportCsv = () => {
     if (!report) return;
@@ -110,14 +120,48 @@ export default function Laporan() {
               { label: 'Jumlah transaksi', value: number(report.transactionCount) },
               { label: 'Rata-rata transaksi', value: money(report.average) },
               { label: 'Item terjual', value: number(report.itemCount) },
-              { label: 'Estimasi laba kotor', value: money(report.grossProfit) },
+              { label: 'Estimasi laba kotor', value: money(report.grossProfit), hint: report.missingCostLines ? 'Sebagian item tanpa harga beli' : undefined },
             ].map((card) => (
               <Card key={card.label} className="p-4">
                 <p className="text-sm text-ink-muted">{card.label}</p>
                 <strong className="mt-1 block font-heading text-xl tnum">{card.value}</strong>
+                {card.hint ? <span className="mt-1 block text-sm text-ink-muted">{card.hint}</span> : null}
               </Card>
             ))}
           </section>
+
+          <Card>
+            <CardHeader title="Tren penjualan" description={`Omzet per hari · ${range.from} s/d ${range.to}`} />
+            <div className="px-5 py-4">
+              {report.dailySeries.length === 0 ? (
+                <p className="text-sm text-ink-muted">Belum ada transaksi selesai pada periode ini.</p>
+              ) : (
+                <div className="flex h-44 items-end gap-2 overflow-x-auto">
+                  {report.dailySeries.map((day) => (
+                    <div key={day.date} className="flex min-w-8 flex-1 flex-col items-center gap-2">
+                      <div className="flex w-full flex-1 items-end">
+                        <div
+                          className="w-full rounded-t-lg bg-primary/80 transition-all hover:bg-primary"
+                          style={{ height: `${Math.max(4, (day.revenue / maxDaily) * 100)}%` }}
+                          title={money(day.revenue)}
+                        />
+                      </div>
+                      <span className="text-sm text-ink-muted tnum">{day.date.slice(5)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="mt-3 flex flex-wrap justify-between gap-2 border-t border-slate-100 pt-3 text-sm text-ink-muted">
+                <span>Total periode <strong className="text-ink tnum">{money(report.revenue)}</strong></span>
+                <span>
+                  Rata-rata harian{' '}
+                  <strong className="text-ink tnum">
+                    {money(report.dailySeries.length ? report.revenue / report.dailySeries.length : 0)}
+                  </strong>
+                </span>
+              </div>
+            </div>
+          </Card>
 
           <div className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
             <Card>
@@ -192,13 +236,13 @@ export default function Laporan() {
                   </tr>
                 </thead>
                 <tbody>
-                  {report.transactions.map((transaction) => (
+                  {report.records.map(({ transaction, revenue }) => (
                     <tr key={transaction.id} className="border-b border-slate-50 last:border-0">
                       <td className="px-5 py-3">{transaction.id}</td>
                       <td className="px-3 py-3 text-ink-muted">{dayKey(transaction.createdAt)}</td>
                       <td className="px-3 py-3">{transaction.cashierName}</td>
                       <td className="px-3 py-3"><Badge tone="neutral">{transaction.paymentMethod}</Badge></td>
-                      <td className="px-5 py-3 text-right tnum">{money(transaction.total)}</td>
+                      <td className="px-5 py-3 text-right tnum">{money(revenue)}</td>
                     </tr>
                   ))}
                 </tbody>
