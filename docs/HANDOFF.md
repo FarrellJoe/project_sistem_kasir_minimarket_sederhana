@@ -1,6 +1,6 @@
 # Catatan Lanjutan (Handoff)
 
-Terakhir diperbarui: 16 November 2026, sesi malam
+Terakhir diperbarui: 17 November 2026, dini hari
 Repo: https://github.com/FarrellJoe/project_sistem_kasir_minimarket_sederhana (branch `main`)
 Lokal: `D:\brahamart-kasir\brahamart-kasir`
 
@@ -89,6 +89,7 @@ Uji browser otomatis dipakai lewat CDP dengan skrip di `%LOCALAPPDATA%\hermes\ca
 
 ## 8. Langkah pertama sesi berikutnya
 
-1. Buka `docs/CONFORMANCE.md` bagian 6 (catatan audit) dan bagian 4 (Tahap 3) — mulai dari SRS 1.5 yang mencatat temuan audit 16 Nov.
-2. Uji regresi formal 19 FR di kedua varian dan isi matriks bukti di `docs/AUDIT.md`.
-3. Commit (`docs: SRS 1.5 + matriks uji`) dan push ke `main`.
+1. Isi matriks bukti 19 FR × 2 varian di `docs/AUDIT.md` (Tahap 3 sisa). Bahan baku sudah ada di `docs/CONFORMANCE.md` bagian 1–6.
+2. Keputusan produk: lanjut ke Supabase atau tetap localStorage. Bila lanjut, skema SQL + RLS + RPC `checkout`/`void_transaction`/`adjust_stock` dibuat terpisah, lalu isi `src/lib/api.js` diganti tanpa menyentuh komponen. Rujukan: SRS Bab 6 dan 8.7.
+3. Lengkapi dua hal administratif: tautan berkas Figma (masukkan ke README + `docs/design.md`) dan URL deploy statis (`dist/` sudah siap diunggah; HashRouter + `base: './'` tidak butuh aturan rewrite).
+4. Opsional: foto produk di versi-lanjutan (paritas dengan versi-murni), foto profil di topbar, dialog konfirmasi sebelum F9 membatalkan transaksi.
