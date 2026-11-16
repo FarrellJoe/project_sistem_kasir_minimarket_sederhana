@@ -1,6 +1,6 @@
 # Kesesuaian Kode terhadap SRS
 
-Diperbarui: 15 November 2026
+Diperbarui: 16 November 2026
 Acuan: `docs/SRS Website Sistem Kasir Minimarket Sederhana.md` versi 1.4
 Varian yang dinilai: `versi-murni/` (HTML/CSS/JS) dan `versi-lanjutan/` (React 18 + Vite)
 
@@ -23,12 +23,12 @@ Legenda: **Ya** = terpenuhi dan teruji · **Sebagian** = ada tetapi belum lengka
 | FR-11 | Pengaturan toko dan opsi sistem | Ya | Ya | Nama/alamat/telepon, footer struk, ukuran kertas, PPN, pembulatan, stok minimum, metode bayar, backup |
 | FR-12 | Dashboard ringkasan | Ya | Ya | Kartu ringkasan, tren 7 hari, produk terlaris, stok menipis |
 | FR-13 | Peringatan stok menipis | Ya | Ya | Ambang `minStock` per produk |
-| FR-14 | Diskon item **atau** transaksi; Kasir ≤10%, di atasnya perlu Admin | Ya | **Sebagian** | versi-murni: diskon per item + per transaksi + verifikasi username/password Admin. versi-lanjutan: hanya diskon transaksi, tanpa verifikasi Admin (baru berupa catatan teks) |
+| FR-14 | Diskon item **atau** transaksi; Kasir ≤10%, di atasnya perlu Admin | Ya | Ya | versi-murni: diskon per item + per transaksi + verifikasi username/password Admin. versi-lanjutan (Tahap 2): diskon per item di keranjang (nominal per unit atau persen per baris), dialog yang sama untuk diskon transaksi, persetujuan Admin diverifikasi di `verifyAdminApproval()` (`lib/api.js`) dan nama penyetuju disimpan pada item + log aktivitas. Uji: kasir 20% ditolak sampai username/password Admin benar (lalu `approvedBy: Rina Pratama`); Admin sendiri tidak diminta persetujuan |
 | FR-15 | Metode pembayaran tunai/QRIS/debit | Ya | Ya | Diambil dari Pengaturan |
 | FR-16 | Cetak struk lewat browser | Ya | Ya | Tombol cetak, CSS cetak khusus struk (58/80 mm) |
 | FR-17 | Void transaksi + stok kembali | Ya | Ya | Admin saja; uji: status `dibatalkan`, stok 119→120 |
 | FR-18 | Ekspor laporan CSV/PDF | Ya | Ya | CSV berkas nyata; PDF lewat dialog cetak (bukan jsPDF seperti SRS) |
-| FR-19 | Ganti password dan perbarui profil sendiri | Ya | **Belum** | versi-murni punya tab "Profil Saya" + ganti password. versi-lanjutan hanya punya reset password oleh Admin |
+| FR-19 | Ganti password dan perbarui profil sendiri | Ya | Ya | versi-murni: tab "Profil Saya" + ganti password. versi-lanjutan (Tahap 2): halaman `/profil` untuk Admin dan Kasir — nama, kontak, foto opsional (JPG/PNG ≤2 MB, diperkecil ke 256 px), ganti password dengan verifikasi password lama. Uji: password lama salah ditolak, password baru bisa dipakai login |
 
 Fitur yang SRS sebut **ditunda** (bukan celah): tahan transaksi, log aktivitas, rekap tutup kasir, cetak thermal langsung, scanner kamera, retur, supplier, multi-cabang.
 
@@ -37,8 +37,8 @@ Fitur yang SRS sebut **ditunda** (bukan celah): tahan transaksi, log aktivitas, 
 | ID | Aspek | versi-murni | versi-lanjutan | Catatan |
 | --- | --- | --- | --- | --- |
 | NFR-01 | Usability, teks ≥14 px, umpan balik aksi | Ya | Ya | Seluruh `font-size` dipaksa ≥14 px; 0 elemen <13,5 px terukur di 7 halaman; toast sukses/gagal ada |
-| NFR-02 | Pencarian <1 dtk, 5.000 produk dengan pagination | Sebagian | **Sebagian** | Pencarian cepat pada data kecil; versi-murni punya pagination tabel, versi-lanjutan belum (semua baris dirender) |
-| NFR-03 | RBAC, hash password, proteksi XSS, sesi kedaluwarsa | Sebagian | Sebagian | XSS tertutup (escapeHTML / React escaping), hash SHA-256 tanpa salt, RBAC hanya di klien (didokumentasikan Bab 8.3). **versi-lanjutan belum punya timer idle 30 menit** — hanya memperpanjang `expiresAt` saat dibaca |
+| NFR-02 | Pencarian <1 dtk, 5.000 produk dengan pagination | Ya | Ya | Komponen `Pagination` 10 baris + "Sebelumnya/Berikutnya" di Produk, Riwayat, Pengguna. Uji: 24 produk → 3 halaman, halaman 2 memuat baris 11–20, pencarian mengembalikan ke halaman 1. Pencarian masih di sisi klien; 5.000 baris belum diuji beban |
+| NFR-03 | RBAC, hash password, proteksi XSS, sesi kedaluwarsa | Sebagian | Sebagian | XSS tertutup (escapeHTML / React escaping), hash SHA-256 tanpa salt, RBAC hanya di klien (didokumentasikan Bab 8.3). Sesi 30 menit kini aktif di **kedua** varian: `App.jsx` + `touchSession()` memperpanjang hanya saat ada aktivitas dan timer 15 detik mengakhiri sesi. Uji: `lastActivityAt` 31 menit lalu → dialihkan ke login, kunci sesi dihapus |
 | NFR-04 | Integritas data, transaksi atomik | Ya | Ya | Rollback manual saat penyimpanan gagal, snapshot harga |
 | NFR-05 | Reliability, backup data | Ya | Ya | Backup JSON + CSV produk di Pengaturan |
 | NFR-06 | Maintainability, modul + README | Ya | Ya | Lapisan layanan terpisah (`product-store.js` / `src/lib/api.js`), komentar, README per varian |
@@ -56,41 +56,42 @@ Fitur yang SRS sebut **ditunda** (bukan celah): tahan transaksi, log aktivitas, 
 | Token warna | `#4F46E5`, `#312E81`, `#F59E0B`, `#22C55E`, `#EF4444`, `#3B82F6` | idem via `tailwind.config.js` | Sesuai |
 | Tipografi | Poppins (judul) + Inter (isi), ≥14 px | idem, `small` dipaksa 14 px | Sesuai |
 | Ikon | SVG inline | Lucide (outline) | Setara, beda sumber |
-| Kotak hint sidebar ("Akses kasir", "Manajemen Produk") | Ada | Belum ada | **Belum konsisten** |
-| Topbar: tanggal, nama, lencana peran, avatar | Ada | Hanya judul + lencana peran | **Belum konsisten** |
-| Header terminal kasir ("Terminal Kasir 01", shift, Kasir ID, struk hari ini) | Ada | Belum ada | **Belum konsisten** |
-| Produk cepat (fast moving) di kasir | Ada | Belum ada | **Belum konsisten** |
-| Struk: catatan PPN, ukuran kertas, barcode | Ada | Catatan PPN + ukuran kertas **baru ditambahkan**; barcode belum | Sebagian |
-| Pagination tabel | Ada (produk, pengguna) | Belum ada | **Belum konsisten** |
+| Kotak hint sidebar ("Akses kasir", "Manajemen Produk") | Ada | Ada (`HINTS` per route di `Layout.jsx`) | Sesuai |
+| Topbar: tanggal, nama, lencana peran, avatar | Ada | Tanggal, nama, kode staf, avatar, lencana peran | Sesuai |
+| Header terminal kasir ("Terminal Kasir 01", shift, Kasir ID, struk hari ini) | Ada | Ada (Tahap 1) | Sesuai |
+| Produk cepat (fast moving) di kasir | Ada | Ada (4 produk prioritas, Tahap 1) | Sesuai |
+| Struk: catatan PPN, ukuran kertas, barcode | Ada | Ada (PPN, toggle 58/80 mm, barcode) | Sesuai |
+| Pagination tabel | Ada, 7–8 baris/halaman (produk, riwayat, pengguna, laporan 5) | Ada, 10 baris/halaman (produk, riwayat, pengguna) | Setara, beda ukuran halaman |
+| Diskon item di keranjang | Ada (baris keranjang + dialog) | Ada (baris keranjang + dialog, persetujuan Admin) | Sesuai |
+| Profil Saya + ganti password | Tab di halaman Pengguna | Halaman `/profil` (menu samping) | Setara, beda penempatan |
+| Timer sesi 30 menit | Interval 30 menit di `auth.js` | Efek di `App.jsx` + `touchSession()` | Sesuai |
 | Filter riwayat: kasir + metode | Ada | **Baru ditambahkan** | Sesuai |
 | Dialog bawaan | `<dialog>` native | Dialog kustom (portal) | Setara secara perilaku |
 
-## 4. Rencana Selanjutnya
+## 4. Rencana dan status
 
-Urut dari yang paling terasa oleh pengguna dan paling ringan dikerjakan.
+### Tahap 1 — konsistensi tampilan — **selesai**
 
-### Tahap 1 — konsistensi tampilan (≈3 jam)
+1. Kotak hint sidebar per halaman + topbar lengkap (tanggal, nama, kode staf, avatar) di versi-lanjutan.
+2. Header terminal kasir "Terminal Kasir 01" dengan shift otomatis, `Kasir ID`, jumlah struk hari ini.
+3. Panel produk cepat (4 produk) di kasir versi-lanjutan.
+4. Toggle ukuran struk 58/80 mm + barcode dekoratif di dialog struk.
 
-1. Kotak hint sidebar per halaman + topbar lengkap (tanggal, nama, avatar) di versi-lanjutan.
-2. Header terminal kasir: "Terminal Kasir 01", shift otomatis dari jam, `Kasir ID`, jumlah struk hari ini.
-3. Panel produk cepat (4 produk terlaris/fast moving) di kasir versi-lanjutan.
-4. Toggle ukuran struk 58/80 mm di dialog struk (sekarang hanya mengikuti Pengaturan).
+### Tahap 2 — celah fungsional SRS — **selesai**
 
-### Tahap 2 — celah fungsional SRS (≈7 jam)
+5. **FR-14**: diskon per item di keranjang + persetujuan Admin (username/password diverifikasi di lapisan layanan) untuk total diskon >10%. Diskon item tersimpan per baris transaksi (`discount`, `discountType`, `discountValue`, `discountApprovedBy`) dan tampil di struk, detail riwayat, serta laporan.
+6. **FR-19**: halaman `/profil` — ubah nama, kontak, foto opsional, dan ganti password sendiri dengan verifikasi password lama.
+7. **NFR-02**: pagination 10 baris pada Produk, Riwayat, dan Pengguna (`Pagination` di `components/ui.jsx`), kembali ke halaman 1 saat filter berubah.
+8. **NFR-03**: timer idle 30 menit di `App.jsx`; sesi hanya diperpanjang oleh aktivitas nyata (`touchSession()`), tidak lagi saat sesi dibaca.
 
-5. **FR-14**: diskon per item di keranjang + verifikasi Admin untuk diskon >10% (port dari `cashier.js`).
-6. **FR-19**: halaman/tab "Profil Saya" — ubah nama, kontak, foto, dan ganti password sendiri.
-7. **NFR-02**: pagination 10 baris + pencarian di sisi data untuk Produk, Riwayat, Pengguna.
-8. **NFR-03/4.2**: timer idle 30 menit aktif di versi-lanjutan (reset pada aktivitas, redirect ke login).
+### Tahap 3 — penguatan dokumen dan uji — **sisa**
 
-### Tahap 3 — penguatan dokumen dan uji (≈2 jam)
-
-9. Tambah `docs/CONFORMANCE.md` (dokumen ini) ke rujukan SRS Bab 8.6 dan README.
-10. Uji regresi kedua varian untuk 19 FR (tabel bukti diperbarui di `docs/AUDIT.md`).
-11. Catat status FR-14/FR-19/NFR-02 sebagai "belum" sampai Tahap 2 selesai, agar dokumen tidak menjanjikan lebih dari kode.
+9. Uji regresi formal 19 FR di kedua varian dan perbarui matriks bukti di `docs/AUDIT.md`.
+10. Tambahkan catatan Tahap 2 (diskon item, profil, pagination, idle) ke SRS Bab 8 sebagai catatan implementasi versi 1.5.
+11. Opsional: tampilkan foto profil pada topbar versi-lanjutan (sekarang avatar memakai inisial; foto tampil di halaman Profil dan daftar Pengguna), dan samakan ukuran halaman pagination (7–8 di versi-murni vs 10 di versi-lanjutan).
 
 ## 5. Kesimpulan
 
-Dari 19 kebutuhan fungsional: **17 terpenuhi penuh, 1 sebagian (FR-14), 1 belum (FR-19)** pada versi-lanjutan; **19 terpenuhi** pada versi-murni. Dari 10 kebutuhan non-fungsional: 7 terpenuhi, 3 sebagian (NFR-02, NFR-03, NFR-08 pada varian murni).
+Dari 19 kebutuhan fungsional: **19 terpenuhi** pada kedua varian. Dari 10 kebutuhan non-fungsional: 8 terpenuhi penuh, 2 sebagian (NFR-03 — keamanan masih di sisi klien, dan NFR-08 pada versi-murni yang statis).
 
-Selisih terbesar bukan pada fitur inti, melainkan pada **detail tampilan dan dua fitur pelengkap** yang sudah ada di versi-murni. Rencana Tahap 1 dan 2 di atas menutup keduanya tanpa mengubah arsitektur.
+Setelah Tahap 1 dan 2, selisih antarvariansi tinggal detail kecil yang disengaja: ukuran halaman pagination (7–8 vs 10), foto profil hanya di halaman Profil/daftar Pengguna (topbar tetap inisial), dan sumber ikon (SVG inline vs Lucide). Keduanya memakai kunci `localStorage` yang sama dan logika bisnis yang setara.

@@ -43,12 +43,13 @@ Kredensial ini hanya untuk demo dan tidak ditampilkan pada halaman login. Ganti 
 ## Fitur yang tersedia di kedua varian
 
 - Login/logout dengan dua peran, kunci 5 percobaan gagal, sesi berakhir setelah 30 menit idle.
-- Kasir: pencarian/scan barcode, keranjang, qty, diskon transaksi, pembayaran tunai/QRIS/debit, kembalian, struk cetak, pengurangan stok otomatis.
-- Produk: CRUD barang dan kategori, pencarian, filter kategori/status stok, nonaktifkan (soft delete).
+- Kasir: pencarian/scan barcode, keranjang, qty, diskon item & transaksi (di atas 10% perlu persetujuan Admin), pembayaran tunai/QRIS/debit, kembalian, struk cetak, pengurangan stok otomatis.
+- Produk: CRUD barang dan kategori, pencarian, filter kategori/status stok, nonaktifkan (soft delete), pagination 10 baris.
 - Stok: daftar ketersediaan, penyesuaian dengan alasan wajib, kartu stok.
-- Riwayat: daftar transaksi, detail, cetak ulang, void oleh Admin dengan pengembalian stok.
+- Riwayat: daftar transaksi (pagination), detail, cetak ulang, void oleh Admin dengan pengembalian stok.
 - Laporan: filter periode/kasir/kategori, ringkasan, produk terjual, ekspor CSV (dan cetak PDF).
 - Pengguna: tambah/ubah/nonaktifkan akun, reset password, perlindungan Admin terakhir, kode staf otomatis.
+- Profil Saya: ubah nama/kontak/foto dan ganti password sendiri.
 - Pengaturan: identitas toko, PPN, pembulatan, metode pembayaran, cadangan JSON/CSV.
 - Shortcut kasir: `F1` cari, `F4` diskon, `F9` batal, `Enter` proses bayar.
 
