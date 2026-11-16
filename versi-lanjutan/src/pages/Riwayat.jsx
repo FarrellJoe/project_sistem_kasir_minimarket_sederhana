@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,7 +7,7 @@ import { Ban, Printer, Search } from 'lucide-react';
 import { listTransactions, listUsers, voidTransaction } from '../lib/api';
 import { dateTime, dayKey, money } from '../lib/format';
 import { useSessionStore } from '../stores';
-import { Badge, Button, Card, CardHeader, Dialog, EmptyState, Field, Input, Select, Textarea, Toast } from '../components/ui';
+import { Badge, Button, Card, CardHeader, Dialog, EmptyState, Field, Input, Pagination, Select, Textarea, Toast } from '../components/ui';
 
 const voidSchema = z.object({
   reason: z.string().trim().min(1, 'Alasan pembatalan wajib diisi.').max(240, 'Alasan maksimal 240 karakter.'),
@@ -25,6 +25,7 @@ export default function Riwayat() {
   const [status, setStatus] = useState('');
   const [cashier, setCashier] = useState('');
   const [method, setMethod] = useState('');
+  const [page, setPage] = useState(1);
   const [detail, setDetail] = useState(null);
   const [voidTarget, setVoidTarget] = useState(null);
   const [toast, setToast] = useState(null);
@@ -50,6 +51,13 @@ export default function Riwayat() {
       return true;
     });
   }, [transactionsQuery.data, search, date, status, cashier, method, isAdmin, session.userId]);
+
+  /* NFR-02: 10 transaksi per halaman. */
+  const PAGE_SIZE = 10;
+  useEffect(() => setPage(1), [search, date, status, cashier, method]);
+  const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const visibleRows = rows.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const voidMutation = useMutation({
     mutationFn: (values) => voidTransaction({ id: voidTarget.id, reason: values.reason }, session),
@@ -123,7 +131,7 @@ export default function Riwayat() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((transaction) => (
+                {visibleRows.map((transaction) => (
                   <tr key={transaction.id} className="border-b border-slate-50 last:border-0 hover:bg-primary-tint/40">
                     <td className="px-5 py-3 font-medium text-ink">{transaction.id}</td>
                     <td className="px-3 py-3 text-ink-muted">{dateTime(transaction.createdAt)}</td>
@@ -144,6 +152,7 @@ export default function Riwayat() {
             </table>
           </div>
         )}
+        <Pagination page={currentPage} pageCount={pageCount} total={rows.length} pageSize={PAGE_SIZE} onChange={setPage} label="transaksi" />
       </Card>
 
       <Dialog

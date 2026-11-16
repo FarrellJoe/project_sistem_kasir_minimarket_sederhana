@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,7 +7,7 @@ import { KeyRound, Pencil, UserPlus } from 'lucide-react';
 import { listUsers, resetUserPassword, saveUser, toggleUser } from '../lib/api';
 import { dateTime, initials } from '../lib/format';
 import { useSessionStore } from '../stores';
-import { Badge, Button, Card, CardHeader, Dialog, Field, Input, Select, Toast } from '../components/ui';
+import { Badge, Button, Card, CardHeader, Dialog, Field, Input, Pagination, Select, Toast } from '../components/ui';
 
 const userSchema = z.object({
   nama: z.string().trim().min(1, 'Nama lengkap wajib diisi.'),
@@ -42,7 +42,19 @@ export default function Pengguna() {
   const [formOpen, setFormOpen] = useState(false);
   const [resetTarget, setResetTarget] = useState(null);
   const [confirm, setConfirm] = useState(null);
+  const [page, setPage] = useState(1);
   const [toast, setToast] = useState(null);
+
+  /* NFR-02: 10 akun per halaman. */
+  const PAGE_SIZE = 10;
+  const users = usersQuery.data || [];
+  const pageCount = Math.max(1, Math.ceil(users.length / PAGE_SIZE));
+  const currentPage = Math.min(page, pageCount);
+  const visibleUsers = users.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount);
+  }, [page, pageCount]);
 
   const notify = (message, tone = 'success') => {
     setToast({ message, tone });
@@ -137,7 +149,7 @@ export default function Pengguna() {
               </tr>
             </thead>
             <tbody>
-              {(usersQuery.data || []).map((user) => {
+              {visibleUsers.map((user) => {
                 const isMe = String(user.id) === String(session.userId);
                 return (
                   <tr key={user.id} className="border-b border-slate-50 last:border-0">
@@ -184,6 +196,7 @@ export default function Pengguna() {
             </tbody>
           </table>
         </div>
+        <Pagination page={currentPage} pageCount={pageCount} total={users.length} pageSize={PAGE_SIZE} onChange={setPage} label="pengguna" />
       </Card>
 
       <Dialog

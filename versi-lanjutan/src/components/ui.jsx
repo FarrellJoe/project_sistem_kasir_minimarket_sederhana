@@ -147,6 +147,29 @@ export function Dialog({ open, onClose, title, description, children, footer, cl
   );
 }
 
+/* Kontrol pagination tabel: 10 baris per halaman (NFR-02), sama seperti versi-murni. */
+export function Pagination({ page, pageCount, total, pageSize = 10, onChange, label = 'baris' }) {
+  if (!total) return null;
+  const from = (page - 1) * pageSize + 1;
+  const to = Math.min(page * pageSize, total);
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-3 text-sm">
+      <span className="text-ink-muted">
+        Menampilkan {from}–{to} dari {total} {label}
+      </span>
+      <div className="flex items-center gap-2">
+        <Button variant="secondary" size="sm" onClick={() => onChange(page - 1)} disabled={page <= 1}>
+          Sebelumnya
+        </Button>
+        <span className="text-ink-muted tnum">Halaman {page} / {pageCount}</span>
+        <Button variant="secondary" size="sm" onClick={() => onChange(page + 1)} disabled={page >= pageCount}>
+          Berikutnya
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export function EmptyState({ icon, title, description, action }) {
   return (
     <div className="grid place-items-center gap-2 px-6 py-14 text-center">
