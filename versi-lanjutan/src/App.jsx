@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import { getSession } from './lib/api';
+import { getSession, logout, touchSession } from './lib/api';
 import { useSessionStore } from './stores';
 import Layout from './components/Layout.jsx';
 import Login from './pages/Login.jsx';
@@ -32,8 +32,10 @@ function RequireAuth({ roles, children }) {
 }
 
 export default function App() {
+  const session = useSessionStore((state) => state.session);
   const setSession = useSessionStore((state) => state.setSession);
   const setReady = useSessionStore((state) => state.setReady);
+  const clearSession = useSessionStore((state) => state.clearSession);
 
   useEffect(() => {
     let active = true;
@@ -46,6 +48,50 @@ export default function App() {
       active = false;
     };
   }, [setSession, setReady]);
+
+  /* NFR-03: sesi berakhir setelah 30 menit tanpa aktivitas. Aktivitas
+     (klik, ketik, sentuh, gulir) memperpanjang sesi; timer memeriksanya tiap
+     15 detik dan mengarahkan kembali ke halaman login. */
+  useEffect(() => {
+    if (!session) return undefined;
+    const IDLE_MS = 30 * 60 * 1000;
+    const CHECK_MS = 15000;
+    let lastActivity = Number(session.lastActivityAt) || Date.now();
+    let lastTouch = lastActivity;
+    let stopped = false;
+
+    const markActive = () => {
+      lastActivity = Date.now();
+    };
+    const events = ['mousedown', 'keydown', 'touchstart', 'scroll', 'mousemove'];
+    events.forEach((name) => window.addEventListener(name, markActive, { passive: true }));
+
+    const check = async () => {
+      if (stopped) return;
+      if (Date.now() - lastActivity >= IDLE_MS) {
+        stopped = true;
+        await logout(session);
+        clearSession();
+        return;
+      }
+      if (lastActivity > lastTouch) {
+        lastTouch = lastActivity;
+        const next = await touchSession();
+        if (!next && !stopped) {
+          stopped = true;
+          clearSession();
+        }
+      }
+    };
+
+    check();
+    const timer = window.setInterval(check, CHECK_MS);
+    return () => {
+      stopped = true;
+      events.forEach((name) => window.removeEventListener(name, markActive));
+      window.clearInterval(timer);
+    };
+  }, [session?.userId, clearSession]);
 
   return (
     <Routes>

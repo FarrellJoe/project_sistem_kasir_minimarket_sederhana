@@ -51,6 +51,9 @@ export async function listActivity() {
 }
 
 /* ---------- Autentikasi ---------- */
+/* Membaca sesi yang masih berlaku. Umur sesi TIDAK diperpanjang saat dibaca;
+   perpanjangan hanya terjadi karena aktivitas pengguna (touchSession), sehingga
+   memuat ulang halaman setelah 30 menit diam tetap mengakhiri sesi (NFR-03). */
 export async function getSession() {
   const session = DB.read(KEYS.session, null);
   if (!session) return null;
@@ -58,7 +61,20 @@ export async function getSession() {
     DB.remove(KEYS.session);
     return null;
   }
-  const next = { ...session, lastActivityAt: Date.now(), expiresAt: Date.now() + SESSION_MINUTES * 60000 };
+  return session;
+}
+
+/* Memperpanjang sesi bila ada aktivitas pengguna. Mengembalikan null bila sesi
+   sudah kedaluwarsa agar pemanggil dapat mengarahkan ke halaman login. */
+export async function touchSession() {
+  const session = DB.read(KEYS.session, null);
+  if (!session) return null;
+  const now = Date.now();
+  if (!Number.isFinite(session.expiresAt) || session.expiresAt <= now) {
+    DB.remove(KEYS.session);
+    return null;
+  }
+  const next = { ...session, lastActivityAt: now, expiresAt: now + SESSION_MINUTES * 60000 };
   DB.write(KEYS.session, next);
   return next;
 }
