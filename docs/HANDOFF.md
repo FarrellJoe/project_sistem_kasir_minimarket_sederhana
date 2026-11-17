@@ -1,6 +1,6 @@
 # Catatan Lanjutan (Handoff)
 
-Terakhir diperbarui: 17 November 2026, dini hari
+Terakhir diperbarui: 17 November 2026, siang
 Repo: https://github.com/FarrellJoe/project_sistem_kasir_minimarket_sederhana (branch `main`)
 Lokal: `D:\brahamart-kasir\brahamart-kasir`
 
@@ -21,6 +21,7 @@ Dokumen ini untuk melanjutkan pekerjaan di sesi berikutnya tanpa membaca ulang s
 | Mark logo Brahamart diperbesar (88 px di tile 36 px, 128 px di tile 48 px) | Selesai |
 | Tech stack Bab 2.7: Recharts 3 (grafik) + jsPDF 4 (PDF laporan), halaman berat di-lazy | Selesai, teruji |
 | SRS naik ke 1.5 (Bab 8.7 status teknologi) + README/CONFORMANCE diperbarui | Selesai |
+| SRS 1.6: Bab 2–6 dinyatakan sebagai rencana (1.2, 1.4, 2.1, 2.4, 6.3) dengan rujukan ke Bab 8, ekspor PDF 29 halaman | Selesai, terverifikasi |
 
 ## 2. Yang selesai di Tahap 2
 
@@ -46,7 +47,7 @@ Bukti uji: header menampilkan `Shift Malam · Kasir ID: ADM-0101 ... Struk hari 
 ## 4. Yang belum (Tahap 3)
 
 1. Uji regresi formal 19 FR di **kedua** varian, isi matriks bukti di `docs/AUDIT.md`.
-2. SRS naik ke 1.5: catat Tahap 2 di Bab 8 (diskon item + persetujuan Admin di lapisan layanan, halaman Profil, pagination 10 baris, timer idle yang tidak memperpanjang sesi saat dibaca).
+2. ~~SRS naik ke 1.5: catat Tahap 2 di Bab 8~~ Selesai 17 Nov (naik ke 1.6 sekalian: redaksi rencana vs realisasi pada 1.2/1.4/2.1/2.4/6.3, PDF 29 halaman di `docs/SRS Website Sistem Kasir Minimarket Sederhana v1.6.pdf`).
 3. Opsional: foto profil di topbar; samakan ukuran pagination versi-murni (7–8) dengan versi-lanjutan (10).
 
 ## 5. Cara menjalankan dan menguji

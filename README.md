@@ -6,7 +6,7 @@ Proyek mata kuliah Web Based Programming (Sistem Informasi, SATU University). Re
 | --- | --- |
 | `versi-murni/` | HTML, CSS, dan JavaScript murni tanpa build tool. Data di `localStorage`. |
 | `versi-lanjutan/` | React 18 + Vite + Tailwind CSS (komponen bergaya shadcn/ui), React Router, Zustand, TanStack Query, React Hook Form + Zod, Lucide Icons. |
-| `docs/` | SRS (versi 1.5), design system, laporan audit, dan mockup Figma. |
+| `docs/` | SRS (versi 1.6, termasuk ekspor PDF), design system, laporan audit, dan mockup Figma. |
 
 ## Menjalankan
 
@@ -55,7 +55,8 @@ Kredensial ini hanya untuk demo dan tidak ditampilkan pada halaman login. Ganti 
 
 ## Dokumen
 
-- `docs/SRS Website Sistem Kasir Minimarket Sederhana.md` — SRS v1.5. Bab 8 memuat catatan implementasi: perbedaan rencana vs kode, pemetaan nama field Indonesia ↔ Inggris, batasan keamanan, keterangan dua varian, dan status teknologi terhadap Bab 2.7.
+- `docs/SRS Website Sistem Kasir Minimarket Sederhana.md` — SRS v1.6. Bab 2–6 adalah rencana/acuan kebutuhan; Bab 8 memuat catatan implementasi: perbedaan rencana vs kode, pemetaan nama field Indonesia ↔ Inggris, batasan keamanan, keterangan dua varian, dan status teknologi terhadap Bab 2.7.
+- `docs/SRS Website Sistem Kasir Minimarket Sederhana v1.6.pdf` — hasil ekspor SRS 1.6 (29 halaman: cover, daftar isi, Bab 1–8) untuk pengumpulan dan evaluasi.
 - `docs/AUDIT.md` — audit kode: kekuatan, temuan yang diperbaiki, temuan terbuka, dan matriks pengujian.
 - `docs/CONFORMANCE.md` — matriks kesesuaian FR-01…FR-19 dan NFR-01…NFR-10 per varian, plus daftar butir tampilan yang belum konsisten dan rencana penutupannya.
 - `docs/design.md` — design system (warna, tipografi, komponen).

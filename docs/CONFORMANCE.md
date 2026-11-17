@@ -1,7 +1,7 @@
 # Kesesuaian Kode terhadap SRS
 
 Diperbarui: 17 November 2026
-Acuan: `docs/SRS Website Sistem Kasir Minimarket Sederhana.md` versi 1.5
+Acuan: `docs/SRS Website Sistem Kasir Minimarket Sederhana.md` versi 1.6
 Varian yang dinilai: `versi-murni/` (HTML/CSS/JS) dan `versi-lanjutan/` (React 18 + Vite)
 
 Legenda: **Ya** = terpenuhi dan teruji · **Sebagian** = ada tetapi belum lengkap · **Belum** = belum ada.
@@ -87,7 +87,7 @@ Fitur yang SRS sebut **ditunda** (bukan celah): tahan transaksi, log aktivitas, 
 ### Tahap 3 — penguatan dokumen dan uji — **sisa**
 
 9. Uji regresi formal 19 FR di kedua varian dan perbarui matriks bukti di `docs/AUDIT.md`.
-10. Tambahkan catatan Tahap 2 (diskon item, profil, pagination, idle) ke SRS Bab 8 sebagai catatan implementasi versi 1.5.
+10. ~~Tambahkan catatan Tahap 2 (diskon item, profil, pagination, idle) ke SRS Bab 8 sebagai catatan implementasi versi 1.5.~~ Selesai: SRS naik ke 1.6 dan Bab 2–6 dinyatakan sebagai rencana (Bab 1.2, 1.4, 2.1, 2.4, 6.3).
 11. Opsional: tampilkan foto profil pada topbar versi-lanjutan (sekarang avatar memakai inisial; foto tampil di halaman Profil dan daftar Pengguna), dan samakan ukuran halaman pagination (7–8 di versi-murni vs 10 di versi-lanjutan).
 
 ## 5. Kesimpulan

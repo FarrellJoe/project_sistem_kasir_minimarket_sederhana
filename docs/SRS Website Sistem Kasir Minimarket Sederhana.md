@@ -2,7 +2,7 @@
 
 ## Website Sistem Kasir Minimarket Sederhana
 
-Versi 1.5 | 17 November 2026 | Status: Draft untuk review
+Versi 1.6 | 17 November 2026 | Status: Draft untuk review
 
 | Informasi | Keterangan |
 | --- | --- |
@@ -25,6 +25,7 @@ Versi 1.5 | 17 November 2026 | Status: Draft untuk review
 | 1.3 | 15 November 2026 | Penambahan Bab 8: catatan implementasi, pemetaan nama field, dan batasan keamanan versi 1 |
 | 1.4 | 15 November 2026 | Penyesuaian skala tipografi ke minimum 14 px dan penambahan keterangan dua varian repositori (Bab 8.6) |
 | 1.5 | 17 November 2026 | Penyelesaian Tahap 2 (diskon item, profil, pagination, timer idle), audit kesesuaian 16 November, dan status teknologi versi-lanjutan terhadap Bab 2.7 (Bab 8.7) |
+| 1.6 | 17 November 2026 | Penegasan bahwa Bab 2 sampai Bab 6 adalah rencana: penyimpanan Supabase pada 1.2, 2.1, 2.4, dan 6.3 dinyatakan sebagai rancangan dan dirujuk ke Bab 8; ekspor PDF untuk evaluasi |
 
 ## 1. PENDAHULUAN
 
@@ -36,7 +37,7 @@ Proyek ini difokuskan pada sisi frontend. Hasil yang dikumpulkan berupa dokumen 
 
 ### 1.2 Lingkup Produk
 
-Sistem adalah aplikasi berbasis web untuk satu minimarket (satu cabang) yang dibangun dengan HTML, CSS, dan JavaScript pada sisi frontend. Data disimpan pada database cloud gratis (Supabase/PostgreSQL) sehingga tersimpan permanen dan dapat diakses dari beberapa perangkat tanpa membangun server backend sendiri.
+Sistem adalah aplikasi berbasis web untuk satu minimarket (satu cabang) yang dibangun dengan HTML, CSS, dan JavaScript pada sisi frontend. **Rencana penyimpanan data** memakai database cloud gratis (Supabase/PostgreSQL) agar data tersimpan permanen dan dapat diakses dari beberapa perangkat tanpa membangun server backend sendiri. Rencana itu belum dijalankan pada versi 1 yang dikumpulkan: data masih disimpan di `localStorage` peramban sehingga terikat pada satu perangkat. Selisih rencana terhadap implementasi dijelaskan pada Bab 8.1, 8.3, dan 8.7.
 
 **Yang termasuk dalam lingkup (in scope):**
 
@@ -71,6 +72,8 @@ Sistem adalah aplikasi berbasis web untuk satu minimarket (satu cabang) yang dib
 
 Bagian 1 berisi penjelasan umum proyek. Bagian 2 menjelaskan deskripsi umum sistem, karakteristik pengguna, lingkungan operasi, dan analisis pemilihan teknologi. Bagian 3 menjelaskan kebutuhan antarmuka eksternal. Bagian 4 merinci kebutuhan fungsional. Bagian 5 merinci kebutuhan non-fungsional. Bagian 6 berisi model data (entitas, relasi, diagram ERD, dan penyimpanan data). Bagian 7 berisi lampiran: matriks hak akses, use case beserta deskripsinya, class diagram, rencana pengujian, kriteria keberhasilan, pengembangan lanjutan, rencana pengerjaan, dan ketentuan bisnis.
 
+Satu kaidah berlaku untuk seluruh dokumen: **Bab 2 sampai Bab 6 memuat rencana dan acuan kebutuhan, bukan laporan hasil pekerjaan.** Realisasi yang benar-benar dijalankan pada versi 1, beserta selisih dan batasannya, dicatat pada Bab 8. Bila keduanya berbeda, Bab 8 yang berlaku untuk versi 1, sedangkan Bab 2 sampai Bab 6 tetap berlaku sebagai arah pengembangan berikutnya.
+
 ### 1.5 Referensi
 
 - Project Brief Sistem Kasir Minimarket Sederhana.
@@ -81,7 +84,7 @@ Bagian 1 berisi penjelasan umum proyek. Bagian 2 menjelaskan deskripsi umum sist
 
 ### 2.1 Perspektif Produk
 
-Sistem merupakan produk mandiri berbasis web yang digunakan di dalam toko. Kasir dan admin mengakses sistem melalui browser pada komputer, laptop, atau tablet. Frontend berupa Single Page Application yang terhubung langsung ke Supabase (database PostgreSQL, autentikasi, dan fungsi database) melalui API, sehingga tidak diperlukan server backend sendiri. Hasil build berupa file HTML, CSS, dan JavaScript statis yang di-hosting secara gratis.
+Sistem merupakan produk mandiri berbasis web yang digunakan di dalam toko. Kasir dan admin mengakses sistem melalui browser pada komputer, laptop, atau tablet. Frontend dirancang sebagai Single Page Application yang terhubung langsung ke Supabase (database PostgreSQL, autentikasi, dan fungsi database) melalui API, sehingga tidak diperlukan server backend sendiri. Pada versi 1 sambungan itu belum ada: data dilayani lapisan layanan dari `localStorage` dan aplikasi berjalan tanpa jaringan (Bab 8.7). Hasil build berupa file HTML, CSS, dan JavaScript statis yang di-hosting secara gratis.
 
 ### 2.2 Fungsi Produk
 
@@ -104,8 +107,8 @@ Sistem merupakan produk mandiri berbasis web yang digunakan di dalam toko. Kasir
 
 - **Perangkat keras klien:** PC/laptop atau tablet (minimal layar 1024 px), opsional barcode scanner USB (mode keyboard) dan printer struk.
 - **Perangkat lunak klien:** browser modern (Chrome, Firefox, Edge, Safari) dengan JavaScript aktif.
-- **Server:** tanpa server sendiri; frontend statis di-hosting gratis (Vercel/Netlify/Cloudflare Pages) dan database di Supabase (paket gratis).
-- **Jaringan:** memerlukan koneksi internet ke layanan database cloud.
+- **Server:** tanpa server sendiri; frontend statis di-hosting gratis (Vercel/Netlify/Cloudflare Pages). Database di Supabase (paket gratis) masih berupa rencana pengembangan; versi 1 belum memakainya sehingga belum ada koneksi jaringan yang dibutuhkan (Bab 8.7).
+- **Jaringan:** pada rancangan, koneksi internet ke layanan database cloud (Supabase) diperlukan untuk memuat dan menyimpan data; pada versi 1 aplikasi berjalan tanpa jaringan karena data berada di peramban (Bab 8.7).
 
 ### 2.5 Batasan Desain dan Implementasi
 
@@ -348,9 +351,11 @@ Tabel settings (key-value) berdiri sendiri sehingga tidak digambarkan pada diagr
 
 ### 6.3 Penyimpanan Data
 
-Data disimpan di Supabase (PostgreSQL). Semua halaman mengakses data melalui lapisan layanan (folder services), tidak langsung dari komponen antarmuka.
+Rancangan penyimpanan data memakai Supabase (PostgreSQL). Semua halaman mengakses data melalui satu lapisan layanan (folder `services`), tidak langsung dari komponen antarmuka, sehingga pemindahan backend cukup mengganti isi lapisan itu.
 
-| Entitas | Tabel Supabase | Catatan |
+Tabel berikut adalah **rancangan skema, bukan keadaan yang sudah berjalan**. Pada versi 1, data masih disimpan di `localStorage` peramban dengan kunci berawalan `kasir_`; tabel dan fungsi di bawah belum dibuat. Pemetaan antara rancangan dan kode yang ada dicatat pada Bab 8.1 dan 8.2, batasannya pada Bab 8.3, dan status teknologinya pada Bab 8.7.
+
+| Entitas | Tabel (rancangan) | Catatan |
 | --- | --- | --- |
 | users | profiles | Terhubung ke auth.users; berisi nama, role, is\_active |
 | categories | categories | Nama kategori unik |
@@ -361,7 +366,7 @@ Data disimpan di Supabase (PostgreSQL). Semua halaman mengakses data melalui lap
 | settings | settings | Pasangan key-value |
 | Fungsi database | checkout, void\_transaction, adjust\_stock | Atomik: transaksi, detail, stok, dan riwayat stok dalam satu proses |
 
-Row Level Security membatasi akses per peran: Kasir hanya dapat membaca produk dan transaksinya sendiri, Admin dapat mengakses semuanya. Skema SQL, kebijakan keamanan, fungsi database, dan data awal (seed: 1 akun Admin, 1 akun Kasir, 5 kategori, 30 produk contoh) disertakan sebagai skrip SQL di repositori; akun demo hanya untuk pengujian.
+Pada rancangan, Row Level Security membatasi akses per peran: Kasir hanya dapat membaca produk dan transaksinya sendiri, Admin dapat mengakses semuanya. Skema SQL, kebijakan keamanan, fungsi database, dan data awal (seed: 1 akun Admin, 1 akun Kasir, 5 kategori, 30 produk contoh) direncanakan sebagai skrip SQL di repositori (struktur folder pada Bab 7.8); berkas tersebut belum ada pada versi 1, dan pembatasan peran baru ditegakkan di antarmuka (Bab 8.3).
 
 ## 7. LAMPIRAN
 
