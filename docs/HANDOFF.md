@@ -16,7 +16,7 @@ Dokumen ini untuk melanjutkan pekerjaan di sesi berikutnya tanpa membaca ulang s
 | Tipografi dinaikkan ke ≥14 px di kedua varian | Selesai, terukur 0 elemen di bawah ambang |
 | Tahap 1 konsistensi tampilan (React) | Selesai, teruji |
 | Tahap 2 celah fungsional: FR-14, FR-19, NFR-02, NFR-03 | **Selesai, teruji di browser** |
-| Tahap 3 (uji regresi formal 19 FR + SRS 1.5) | Belum |
+| Tahap 3 (uji regresi formal 19 FR; SRS sudah di 1.6) | Belum, tinggal uji |
 | Audit ulang SRS 16 Nov: 5 selisih diperbaiki (filter kategori, laba, grafik tren, peringatan harga, guard nonaktifkan diri) | Selesai, teruji |
 | Mark logo Brahamart diperbesar (88 px di tile 36 px, 128 px di tile 48 px) | Selesai |
 | Tech stack Bab 2.7: Recharts 3 (grafik) + jsPDF 4 (PDF laporan), halaman berat di-lazy | Selesai, teruji |

@@ -84,7 +84,7 @@ Satu kaidah berlaku untuk seluruh dokumen: **Bab 2 sampai Bab 6 memuat rencana d
 
 ### 2.1 Perspektif Produk
 
-Sistem merupakan produk mandiri berbasis web yang digunakan di dalam toko. Kasir dan admin mengakses sistem melalui browser pada komputer, laptop, atau tablet. Frontend dirancang sebagai Single Page Application yang terhubung langsung ke Supabase (database PostgreSQL, autentikasi, dan fungsi database) melalui API, sehingga tidak diperlukan server backend sendiri. Pada versi 1 sambungan itu belum ada: data dilayani lapisan layanan dari `localStorage` dan aplikasi berjalan tanpa jaringan (Bab 8.7). Hasil build berupa file HTML, CSS, dan JavaScript statis yang di-hosting secara gratis.
+Sistem merupakan produk mandiri berbasis web yang digunakan di dalam toko. Kasir dan admin mengakses sistem melalui browser pada komputer, laptop, atau tablet. Frontend dirancang sebagai Single Page Application yang terhubung langsung ke Supabase (database PostgreSQL, autentikasi, dan fungsi database) melalui API, sehingga tidak diperlukan server backend sendiri. Pada versi 1 sambungan itu belum ada: data disediakan lapisan layanan (folder `services`) dari `localStorage` dan aplikasi berjalan tanpa jaringan (Bab 8.7). Hasil build berupa file HTML, CSS, dan JavaScript statis yang di-hosting secara gratis.
 
 ### 2.2 Fungsi Produk
 
@@ -107,8 +107,8 @@ Sistem merupakan produk mandiri berbasis web yang digunakan di dalam toko. Kasir
 
 - **Perangkat keras klien:** PC/laptop atau tablet (minimal layar 1024 px), opsional barcode scanner USB (mode keyboard) dan printer struk.
 - **Perangkat lunak klien:** browser modern (Chrome, Firefox, Edge, Safari) dengan JavaScript aktif.
-- **Server:** tanpa server sendiri; frontend statis di-hosting gratis (Vercel/Netlify/Cloudflare Pages). Database di Supabase (paket gratis) masih berupa rencana pengembangan; versi 1 belum memakainya sehingga belum ada koneksi jaringan yang dibutuhkan (Bab 8.7).
-- **Jaringan:** pada rancangan, koneksi internet ke layanan database cloud (Supabase) diperlukan untuk memuat dan menyimpan data; pada versi 1 aplikasi berjalan tanpa jaringan karena data berada di peramban (Bab 8.7).
+- **Server:** tanpa server sendiri; frontend statis di-hosting gratis (Vercel/Netlify/Cloudflare Pages). Database di Supabase (paket gratis) masih berupa rencana pengembangan dan belum dipakai pada versi 1 (Bab 8.7).
+- **Jaringan:** pada rancangan, koneksi internet diperlukan untuk memuat dan menyimpan data ke Supabase; pada versi 1 aplikasi berjalan tanpa jaringan karena data berada di peramban (Bab 8.7).
 
 ### 2.5 Batasan Desain dan Implementasi
 
